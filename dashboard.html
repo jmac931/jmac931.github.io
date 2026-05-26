@@ -19,9 +19,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);background:var(--bg);}
-header{background:var(--blue);color:#fff;padding:1.4rem 2rem;}
-header h1{font-size:1.25rem;font-weight:500;}
-header p{font-size:.82rem;opacity:.72;margin-top:3px;}
+
 #status{padding:.75rem 2rem;font-size:13px;color:var(--muted);border-bottom:.5px solid var(--bd);display:flex;align-items:center;gap:10px;}
 #status.ok{display:none;}
 #status.err{color:#a00;background:#fce8e8;}
@@ -72,10 +70,7 @@ footer a{color:var(--blue);text-decoration:none;}
 </style>
 </head>
 <body>
-<header>
-  <h1>Dashboard Académico — José Manuel Ferreira Machado</h1>
-  <p>Professor Catedrático · Departamento de Informática · Universidade do Minho</p>
-</header>
+
 <div id="status"><div class="spin"></div><span id="st">A carregar dados…</span></div>
 <main id="app" style="display:none">
   <nav>
@@ -83,7 +78,9 @@ footer a{color:var(--blue);text-decoration:none;}
     <button onclick="tab('supervision',this)">Supervisão</button>
     <button onclick="tab('reviews',this)">Revisões</button>
     <button onclick="tab('outreach',this)">Outreach</button>
-    <button onclick="tab('academic',this)">Académico</button>
+    <button onclick="tab('juris',this)">Júris</button>
+    <button onclick="tab('organizacoes',this)">Organizações</button>
+    <button onclick="tab('avaliacoes',this)">Avaliações</button>
     <button onclick="tab('projects',this)">Projetos</button>
     <button onclick="tab('awards',this)">Prémios</button>
   </nav>
@@ -122,6 +119,8 @@ footer a{color:var(--blue);text-decoration:none;}
     </div>
     <div class="sec">Doutoramentos em curso</div>
     <div id="phd-on" class="tl"></div>
+    <div class="sec" style="margin-top:1rem">Doutoramentos Concluídos <span class="sec-n" id="n-phd-list"></span></div>
+    <div id="phd-list"></div>
     <div class="sec" style="margin-top:1rem">Mestrados Concluídos <span class="sec-n" id="n-msc"></span></div>
     <div id="msc-rec"></div>
   </div>
@@ -159,22 +158,28 @@ footer a{color:var(--blue);text-decoration:none;}
     <div id="aulas-tbl"></div>
   </div>
 
-  <!-- ACADÉMICO -->
-  <div id="tab-academic" class="tab">
-    <div class="metrics" id="m-acad"></div>
-    <div class="grid2">
-      <div>
-        <div class="sec">Júris por categoria</div>
-        <div class="chart-wrap" style="height:260px"><canvas id="c-juris"></canvas></div>
-      </div>
-      <div>
-        <div class="sec">Organizações por tipo</div>
-        <div class="chart-wrap" style="height:260px"><canvas id="c-org"></canvas></div>
-      </div>
-    </div>
+  <!-- JÚRIS -->
+  <div id="tab-juris" class="tab">
+    <div class="metrics" id="m-jur"></div>
+    <div class="sec">Júris por categoria</div>
+    <div class="chart-wrap" style="height:260px"><canvas id="c-juris"></canvas></div>
     <div class="sec">Todos os Júris <span class="sec-n" id="n-jur"></span></div>
     <div id="juris-tbl"></div>
-    <div class="sec" style="margin-top:1rem">Todas as Avaliações de Projeto <span class="sec-n" id="n-av"></span></div>
+  </div>
+
+  <!-- ORGANIZAÇÕES -->
+  <div id="tab-organizacoes" class="tab">
+    <div class="metrics" id="m-org"></div>
+    <div class="sec">Organizações por tipo</div>
+    <div class="chart-wrap" style="height:260px"><canvas id="c-org"></canvas></div>
+    <div class="sec">Todas as Organizações <span class="sec-n" id="n-org"></span></div>
+    <div id="org-tbl"></div>
+  </div>
+
+  <!-- AVALIAÇÕES -->
+  <div id="tab-avaliacoes" class="tab">
+    <div class="metrics" id="m-av"></div>
+    <div class="sec">Avaliações de Projeto <span class="sec-n" id="n-av"></span></div>
     <div id="aval-tbl"></div>
   </div>
 
@@ -333,16 +338,13 @@ function stripDatePrefix(s){
     .trim();
 }
 
-// Generate dynamic table from all rows — shows ALL columns
-function dynTable(rows, colorCol){
+// Generate dynamic table — excludes specified columns
+function dynTable(rows, excludeCols=[]){
   if(!rows||rows.length===0) return '<p style="font-size:13px;color:var(--hint);padding:8px 0">Sem dados</p>';
-  const keys=Object.keys(rows[0]);
+  const excl=excludeCols.map(c=>c.toLowerCase());
+  const keys=Object.keys(rows[0]).filter(k=>!excl.includes(k.toLowerCase()));
   const hdr=keys.map(k=>`<th>${k}</th>`).join('');
-  const body=rows.map(r=>`<tr>${keys.map(k=>{
-    const v=r[k]||'';
-    if(k===colorCol&&v) return `<td><span class="badge b-blue">${v}</span></td>`;
-    return `<td>${v}</td>`;
-  }).join('')}</tr>`).join('');
+  const body=rows.map(r=>`<tr>${keys.map(k=>`<td>${r[k]||''}</td>`).join('')}</tr>`).join('');
   return `<table class="dt"><thead><tr>${hdr}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
@@ -366,17 +368,17 @@ function mkPie(id,labels,data,colors){
 }
 
 // ── RENDER ───────────────────────────────────────────────────────────
-function render(){ov();sup();rev();out();acad();proj();aw();}
+function render(){ov();sup();rev();out();jur();org();av();proj();aw();}
 
 function ov(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[];
   const yrPhd=phd.length>0?yearCol(phd[0]):'Ano';
   const yrMsc=msc.length>0?yearCol(msc[0]):'Ano';
-  const pd=byY(phd,yrPhd),md=byY(msc,yrMsc);
+  const pd=byYRobust(phd,yrPhd),md=byYRobust(msc,yrMsc);
   const yrs=[...new Set([...Object.keys(pd),...Object.keys(md)].map(Number))].sort((a,b)=>a-b);
-  const rev=DATA.Revistas||[]; const ry=byY(rev,yearCol(rev[0])||'Ano'); const rys=sortY(ry);
+  const rev=DATA.Revistas||[]; const ryc=rev.length>0?yearCol(rev[0]):'Ano'; const ry=byYRobust(rev,ryc); const rys=sortY(ry);
   const pal=DATA.Palestras||[]; const ky=DATA.Keynote||[];
-  const py=byY(pal,yearCol(pal[0])||'Ano'); const ky2=byY(ky,yearCol(ky[0])||'Ano');
+  const py=byYRobust(pal,yearCol(pal[0])||'Ano'); const ky2=byYRobust(ky,yearCol(ky[0])||'Ano');
   const ty=[...new Set([...Object.keys(py),...Object.keys(ky2)].map(Number))].sort((a,b)=>a-b);
   $('m-ov').innerHTML=
     mc(phd.length,'PhD concluídos')+mc((DATA.AlunosPhD||[]).length,'PhD em curso')+
@@ -396,12 +398,11 @@ function sup(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[],on=DATA.AlunosPhD||[];
   const yf=phd.length>0?yearCol(phd[0]):'Ano';
   const ym=msc.length>0?yearCol(msc[0]):'Ano';
-  const pd=byY(phd,yf),md=byY(msc,ym);
+  const pd=byYRobust(phd,yf),md=byYRobust(msc,ym);
   const py=sortY(pd),my=sortY(md);
   $('m-sup').innerHTML=mc(phd.length,'PhD concluídos')+mc(on.length,'PhD em curso')+mc(msc.length,'MSc concluídos')+mc(py[0]||'—','Primeiro doutoramento');
   mkC('c-phd','bar',py,[{label:'PhD',data:py.map(y=>pd[y]),backgroundColor:'#1a4f8a',borderRadius:3}]);
   mkC('c-msc','bar',my,[{label:'MSc',data:my.map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
-  // PhD em curso
   $('phd-on').innerHTML=on.map(r=>{
     const keys=Object.keys(r);
     const yr=r[yearCol(r)||keys[0]]||'';
@@ -409,45 +410,48 @@ function sup(){
     const trab=r[keys.find(k=>k.toLowerCase().includes('trab')||k.toLowerCase().includes('título')||k.toLowerCase().includes('titulo'))||'']||'';
     return `<div class="tl-row"><div class="tl-yr">${String(yr).replace(/desde\s*/i,'')}</div><div class="tl-dot"></div><div class="tl-txt"><strong>${nome}</strong>${trab?' — '+trab:''}</div></div>`;
   }).join('');
+  // Lista doutoramentos concluídos ordenada por ano desc
+  const phdSorted=[...phd].sort((a,b)=>(numY(b[yf])||0)-(numY(a[yf])||0));
+  setN('n-phd-list',phd.length);
+  $('phd-list').innerHTML=dynTable(phdSorted);
   setN('n-msc',msc.length);
-  $('msc-rec').innerHTML=dynTable([...msc].sort((a,b)=>(numY(b[yearCol(b)||'Ano'])||0)-(numY(a[yearCol(a)||'Ano'])||0)));
+  $('msc-rec').innerHTML=dynTable([...msc].sort((a,b)=>(numY(b[ym])||0)-(numY(a[ym])||0)));
 }
 
 function rev(){
   const rev=DATA.Revistas||[],ipc=DATA.IPC||[];
   const yc=rev.length>0?yearCol(rev[0]):'Ano';
-  // IPC: use robust year extraction since year may be in conference name or date column
-  const yi=ipc.length>0?yearCol(ipc[0]):null;
   const rd=byYRobust(rev,yc);
-  // For IPC, try yearCol first; if empty, scan all columns for years
-  let id_={};
-  if(yi){ id_=byYRobust(ipc,yi); }
-  if(Object.keys(id_).length===0){
-    // scan all columns
-    ipc.forEach(r=>{
+  // IPC: scan all columns for years since year column may be absent or named differently
+  const id_={};
+  ipc.forEach(r=>{
+    let y=null;
+    // try yearCol first
+    const yCol=yearCol(r); if(yCol) y=extractYear(r[yCol])||numY(r[yCol]);
+    // if not found, scan all values
+    if(!y||y<1990||y>2100){
       for(const k of Object.keys(r)){
-        const y=extractYear(r[k])||numY(r[k]);
-        if(y&&y>1990&&y<2100){ id_[y]=(id_[y]||0)+1; break; }
+        const candidate=extractYear(r[k]);
+        if(candidate&&candidate>1990&&candidate<2100){y=candidate;break;}
       }
-    });
-  }
+    }
+    if(y&&y>1990&&y<2100) id_[y]=(id_[y]||0)+1;
+  });
   const ry=sortY(rd),iy=sortY(id_);
   const mx=Math.max(...Object.values(rd),0),mxy=ry.find(y=>rd[y]===mx)||'';
   const mxi=Math.max(...Object.values(id_),0),mxiy=iy.find(y=>id_[y]===mxi)||'';
   $('m-rev').innerHTML=mc(rev.length,'Revisões em revistas')+mc(mx,'Pico anual',mxy+'')+mc(ipc.length,'IPC memberships')+mc(mxi,'Pico anual IPC',mxiy+'');
   mkC('c-rev','line',ry,[{label:'Rev',data:ry.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:4,fill:true,tension:0.3}]);
-  setN('n-rev',rev.length);
-  $('rev-list').innerHTML=dynTable(rev);
+  setN('n-rev',rev.length); $('rev-list').innerHTML=dynTable(rev);
   mkC('c-ipc','bar',iy,[{label:'IPC',data:iy.map(y=>id_[y]),backgroundColor:'#6b48c7',borderRadius:3}]);
-  setN('n-ipc',ipc.length);
-  $('ipc-list').innerHTML=dynTable(ipc);
+  setN('n-ipc',ipc.length); $('ipc-list').innerHTML=dynTable(ipc);
 }
 
 function out(){
   const pal=DATA.Palestras||[],ky=DATA.Keynote||[];
   const conf=DATA.Conferências||[],vis=DATA.Visiting||[],aul=DATA.Aulas||[];
-  const yp=byY(pal,yearCol(pal[0])||'Ano'),yk=byY(ky,yearCol(ky[0])||'Ano');
-  const yc=byY(conf,yearCol(conf[0])||'Ano');
+  const yp=byYRobust(pal,yearCol(pal[0])||'Ano'),yk=byYRobust(ky,yearCol(ky[0])||'Ano');
+  const yc=byYRobust(conf,yearCol(conf[0])||'Ano');
   const ty=[...new Set([...Object.keys(yp),...Object.keys(yk)].map(Number))].sort((a,b)=>a-b);
   const cy=sortY(yc);
   $('m-out').innerHTML=mc(ky.length,'Keynotes')+mc(pal.length,'Palestras')+mc(conf.length,'Conferências')+mc(vis.length,'Visiting')+mc(aul.length,'Aulas exterior');
@@ -457,99 +461,98 @@ function out(){
   setN('n-pal',pal.length); $('palestras-tbl').innerHTML=dynTable(pal);
   setN('n-key',ky.length);  $('key-list').innerHTML=dynTable(ky);
   mkC('c-conf','bar',cy,[{label:'Conf',data:cy.map(y=>yc[y]||0),backgroundColor:'#0891b2',borderRadius:3}]);
-  setN('n-conf',conf.length); $('conf-tbl').innerHTML=dynTable(conf);
+  setN('n-conf',conf.length); $('conf-tbl').innerHTML=dynTable(conf,['link','Link']);
+  // Visiting: strip date prefix + exclude Link and Pessoa
   setN('n-vis',vis.length);
-  // Visiting: strip "Mes, YYYY" date prefix from first text column
   $('visiting-tbl').innerHTML=dynTable(vis.map(r=>{
     const cleaned={...r};
-    const keys=Object.keys(r);
-    // Clean all string fields that start with a month name
-    keys.forEach(k=>{
+    Object.keys(cleaned).forEach(k=>{
       if(typeof cleaned[k]==='string'&&/^(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(cleaned[k].trim())){
         cleaned[k]=stripDatePrefix(cleaned[k]);
       }
     });
     return cleaned;
-  }));
-  setN('n-aul',aul.length);  $('aulas-tbl').innerHTML=dynTable(aul);
+  }),['link','Link','Pessoa','pessoa']);
+  setN('n-aul',aul.length); $('aulas-tbl').innerHTML=dynTable(aul);
 }
 
-function acad(){
-  const jur=DATA.Júris||[],org=DATA.Organizações||[],av=DATA.Avaliações||[];
+function jur(){
+  const jur=DATA.Júris||[];
   const jkeys_all=jur.length>0?Object.keys(jur[0]):[];
   const catCol=jkeys_all.find(k=>k.toLowerCase().includes('categ')||k.toLowerCase().includes('tipo'))||jkeys_all[1]||'';
-  const okeys_all=org.length>0?Object.keys(org[0]):[];
-  const tipoCol=okeys_all.find(k=>k.toLowerCase().includes('tipo')||k.toLowerCase().includes('categ'))||okeys_all[1]||'';
-  const jcat=byVal(jur,catCol),ocat=byVal(org,tipoCol);
+  const autorCol=jkeys_all.find(k=>k.toLowerCase().includes('autor')||k.toLowerCase().includes('candidato')||k.toLowerCase().includes('nome'))||'';
+  const jcat=byVal(jur,catCol);
   const jk=Object.keys(jcat).sort((a,b)=>jcat[b]-jcat[a]);
-  const ok=Object.keys(ocat).sort((a,b)=>ocat[b]-ocat[a]);
-  $('m-acad').innerHTML=mc(jur.length,'Júris académicos')+mc(org.length,'Organizações')+mc(av.length,'Avaliações');
+  $('m-jur').innerHTML=mc(jur.length,'Total júris')+mc(jcat['Doutoramento']||0,'Doutoramento')+mc(jcat['Mestrado']||0,'Mestrado')+mc(jcat['Agregação']||0,'Agregação');
   if(jk.length>0) mkPie('c-juris',jk,jk.map(k=>jcat[k]),PALETTE);
   else { const jy=byYRobust(jur,yearCol(jur[0])||'Ano'),jys=sortY(jy); mkC('c-juris','bar',jys,[{label:'Júris',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]); }
-  if(ok.length>0) mkPie('c-org',ok,ok.map(k=>ocat[k]),PALETTE.slice(3));
-  else { const oy=byYRobust(org,yearCol(org[0])||'Ano'),oys=sortY(oy); mkC('c-org','bar',oys,[{label:'Org',data:oys.map(y=>oy[y]),backgroundColor:'#6b48c7',borderRadius:3}]); }
-
-  // Júris: sort by category order, highlight Tipo and Autor
-  const ORDER=['Agregação','Doutoramento','Mestrado','Planeamento de Tese','Planeamento de tese'];
-  const autorCol=jkeys_all.find(k=>k.toLowerCase().includes('autor')||k.toLowerCase().includes('candidato')||k.toLowerCase().includes('nome'))||'';
+  const ORDER=['Agregação','Doutoramento','Mestrado','Planeamento'];
   const sortedJur=[...jur].sort((a,b)=>{
     const ai=ORDER.findIndex(o=>String(a[catCol]||'').toLowerCase().includes(o.toLowerCase()));
     const bi=ORDER.findIndex(o=>String(b[catCol]||'').toLowerCase().includes(o.toLowerCase()));
-    const av_=ai===-1?99:ai, bv=bi===-1?99:bi;
-    return av_-bv;
+    return (ai===-1?99:ai)-(bi===-1?99:bi);
   });
   setN('n-jur',jur.length);
-  // Build custom Júris table with colour-coded Tipo
-  if(sortedJur.length===0){ $('juris-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados</p>'; }
-  else {
-    const cols=Object.keys(sortedJur[0]);
-    const tipoColors={'Agregação':'b-purple','Doutoramento':'b-blue','Mestrado':'b-green','Planeamento de tese':'b-amber','Planeamento de Tese':'b-amber'};
-    const hdr=cols.map(k=>`<th>${k}</th>`).join('');
-    const body=sortedJur.map(r=>`<tr>${cols.map(k=>{
-      const v=r[k]||'';
-      if(k===catCol&&v){
-        const cls=Object.keys(tipoColors).find(t=>v.toLowerCase().includes(t.toLowerCase()));
-        return `<td><span class="badge ${cls?tipoColors[cls]:'b-gray'}">${v}</span></td>`;
-      }
-      if(k===autorCol&&v) return `<td><strong>${v}</strong></td>`;
-      return `<td>${v}</td>`;
-    }).join('')}</tr>`).join('');
-    $('juris-tbl').innerHTML=`<table class="dt"><thead><tr>${hdr}</tr></thead><tbody>${body}</tbody></table>`;
-  }
+  if(sortedJur.length===0){ $('juris-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados</p>'; return; }
+  const cols=Object.keys(sortedJur[0]);
+  const tipoColors={'Agregação':'b-purple','Doutoramento':'b-blue','Mestrado':'b-green','Planeamento':'b-amber'};
+  const hdr=cols.map(k=>`<th>${k}</th>`).join('');
+  const body=sortedJur.map(r=>`<tr>${cols.map(k=>{
+    const v=r[k]||'';
+    if(k===catCol&&v){
+      const cls=Object.keys(tipoColors).find(t=>v.toLowerCase().includes(t.toLowerCase()));
+      return `<td><span class="badge ${cls?tipoColors[cls]:'b-gray'}">${v}</span></td>`;
+    }
+    if(k===autorCol&&v) return `<td><strong>${v}</strong></td>`;
+    return `<td>${v}</td>`;
+  }).join('')}</tr>`).join('');
+  $('juris-tbl').innerHTML=`<table class="dt"><thead><tr>${hdr}</tr></thead><tbody>${body}</tbody></table>`;
+}
 
-  // Avaliações — show all rows, log if empty
-  setN('n-av',av.length);
-  if(av.length===0){
-    $('aval-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados — verifique o GID da aba Avaliações (atual: 402033740)</p>';
-    console.warn('Avaliações está vazia. Dados recebidos:', DATA.Avaliações);
+function org(){
+  const orgD=DATA.Organizações||[];
+  const okeys_all=orgD.length>0?Object.keys(orgD[0]):[];
+  const tipoCol=okeys_all.find(k=>k.toLowerCase().includes('tipo')||k.toLowerCase().includes('categ'))||okeys_all[1]||'';
+  const ocat=byVal(orgD,tipoCol);
+  const ok=Object.keys(ocat).sort((a,b)=>ocat[b]-ocat[a]);
+  $('m-org').innerHTML=mc(orgD.length,'Total organizações');
+  if(ok.length>0) mkPie('c-org',ok,ok.map(k=>ocat[k]),PALETTE.slice(3));
+  else { const oy=byYRobust(orgD,yearCol(orgD[0])||'Ano'),oys=sortY(oy); mkC('c-org','bar',oys,[{label:'Org',data:oys.map(y=>oy[y]),backgroundColor:'#6b48c7',borderRadius:3}]); }
+  setN('n-org',orgD.length); $('org-tbl').innerHTML=dynTable(orgD);
+}
+
+function av(){
+  const avD=DATA.Avaliações||[];
+  $('m-av').innerHTML=mc(avD.length,'Total avaliações');
+  setN('n-av',avD.length);
+  if(avD.length===0){
+    $('aval-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados. GID actual: 402033740. Verifique na consola (F12).</p>';
+    console.warn('Avaliações vazia. Todos os dados:', DATA);
   } else {
-    $('aval-tbl').innerHTML=dynTable(av);
+    $('aval-tbl').innerHTML=dynTable(avD);
   }
 }
 
 function proj(){
   const all=DATA.Projetos||[];
-  // Find EmCurso column
   const keys=all.length>0?Object.keys(all[0]):[];
   const ecCol=keys.find(k=>k.toLowerCase().includes('emcurso')||k.toLowerCase().includes('curso'))||'EmCurso';
   const irCol=keys.find(k=>k.toLowerCase()==='ir')||'IR';
   const isActive=r=>{const v=String(r[ecCol]||'').trim().toUpperCase();return v==='S'||v==='SIM'||v==='YES'||v==='TRUE'||v==='1';};
   const active=all.filter(isActive);
   const done=all.filter(r=>!isActive(r));
+  const excludeCols=[ecCol,'EmCurso','emcurso'];
   $('m-proj').innerHTML=
-    mc(all.length,'Total projetos')+
-    mc(active.length,'Em curso')+
-    mc(done.length,'Concluídos')+
-    mc(all.filter(r=>{const v=String(r[irCol]||'').trim().toUpperCase();return v==='S'||v==='SIM'||v==='YES';}).length,'Como IR','investigador responsável');
-  setN('n-proj-a',active.length); $('proj-active-tbl').innerHTML=dynTable(active);
-  setN('n-proj-d',done.length);   $('proj-done-tbl').innerHTML=dynTable(done);
+    mc(all.length,'Total projetos')+mc(active.length,'Em curso')+mc(done.length,'Concluídos')+
+    mc(all.filter(r=>{const v=String(r[irCol]||'').trim().toUpperCase();return v==='S'||v==='SIM';}).length,'Como IR','investigador responsável');
+  setN('n-proj-a',active.length); $('proj-active-tbl').innerHTML=dynTable(active,excludeCols);
+  setN('n-proj-d',done.length);   $('proj-done-tbl').innerHTML=dynTable(done,excludeCols);
 }
 
 function aw(){
   const all=DATA.Prémios||[];
   $('m-aw').innerHTML=mc(all.length,'Prémios e distinções');
-  setN('n-aw',all.length);
-  $('aw-list').innerHTML=dynTable(all);
+  setN('n-aw',all.length); $('aw-list').innerHTML=dynTable(all);
 }
 
 function tab(id,btn){
