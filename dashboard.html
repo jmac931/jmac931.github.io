@@ -71,137 +71,137 @@ footer a{color:var(--blue);text-decoration:none;}
 </head>
 <body>
 
-<div id="status"><div class="spin"></div><span id="st">A carregar dados…</span></div>
+<div id="status"><div class="spin"></div><span id="st">Loading data…</span></div>
 <main id="app" style="display:none">
   <nav>
-    <button class="active" onclick="tab('overview',this)">Visão geral</button>
-    <button onclick="tab('supervision',this)">Supervisão</button>
-    <button onclick="tab('reviews',this)">Revisões</button>
+    <button class="active" onclick="tab('overview',this)">Overview</button>
+    <button onclick="tab('supervision',this)">Supervision</button>
+    <button onclick="tab('reviews',this)">Reviews</button>
     <button onclick="tab('outreach',this)">Outreach</button>
-    <button onclick="tab('juris',this)">Júris</button>
-    <button onclick="tab('organizacoes',this)">Organizações</button>
-    <button onclick="tab('avaliacoes',this)">Avaliações</button>
-    <button onclick="tab('projects',this)">Projetos</button>
-    <button onclick="tab('awards',this)">Prémios</button>
+    <button onclick="tab('juris',this)">Juries</button>
+    <button onclick="tab('organizacoes',this)">Organizations</button>
+    <button onclick="tab('avaliacoes',this)">Evaluations</button>
+    <button onclick="tab('projects',this)">Projects</button>
+    <button onclick="tab('awards',this)">Awards</button>
   </nav>
 
-  <!-- VISÃO GERAL -->
+  <!-- OVERVIEW -->
   <div id="tab-overview" class="tab active">
     <div class="metrics" id="m-ov"></div>
     <div class="grid2">
       <div>
-        <div class="sec">PhD e MSc por ano</div>
+        <div class="sec">PhD and MSc by Year</div>
         <div class="legend"><span><b style="background:#1a4f8a"></b>PhD</span><span><b style="background:#1D9E75"></b>MSc</span></div>
         <div class="chart-wrap" style="height:220px"><canvas id="c-ov"></canvas></div>
       </div>
       <div>
-        <div class="sec">Revisões em revistas por ano</div>
+        <div class="sec">Journal Reviews by Year</div>
         <div class="chart-wrap" style="height:220px"><canvas id="c-ov-rev"></canvas></div>
       </div>
     </div>
-    <div class="sec">Palestras e keynotes por ano</div>
-    <div class="legend"><span><b style="background:#D85A30"></b>Palestras</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
+    <div class="sec">Talks and Keynotes by Year</div>
+    <div class="legend"><span><b style="background:#D85A30"></b>Talks</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
     <div class="chart-wrap" style="height:200px"><canvas id="c-ov-talks"></canvas></div>
   </div>
 
-  <!-- SUPERVISÃO -->
+  <!-- SUPERVISION -->
   <div id="tab-supervision" class="tab">
     <div class="metrics" id="m-sup"></div>
     <div class="grid2">
       <div>
-        <div class="sec">Doutoramentos concluídos por ano</div>
+        <div class="sec">Completed PhDs by Year</div>
         <div class="chart-wrap" style="height:220px"><canvas id="c-phd"></canvas></div>
       </div>
       <div>
-        <div class="sec">Mestrados concluídos por ano</div>
+        <div class="sec">Completed MScs by Year</div>
         <div class="chart-wrap" style="height:220px"><canvas id="c-msc"></canvas></div>
       </div>
     </div>
-    <div class="sec">Doutoramentos em curso</div>
+    <div class="sec">Ongoing PhD Programmes</div>
     <div id="phd-on" class="tl"></div>
-    <div class="sec" style="margin-top:1rem">Doutoramentos Concluídos <span class="sec-n" id="n-phd-list"></span></div>
+    <div class="sec" style="margin-top:1rem">Completed Doctorates <span class="sec-n" id="n-phd-list"></span></div>
     <div id="phd-list"></div>
-    <div class="sec" style="margin-top:1rem">Mestrados Concluídos <span class="sec-n" id="n-msc"></span></div>
+    <div class="sec" style="margin-top:1rem">Completed Masters <span class="sec-n" id="n-msc"></span></div>
     <div id="msc-rec"></div>
   </div>
 
-  <!-- REVISÕES -->
+  <!-- REVIEWS -->
   <div id="tab-reviews" class="tab">
     <div class="metrics" id="m-rev"></div>
-    <div class="sec">Revisões em revistas por ano</div>
+    <div class="sec">Journal Reviews by Year</div>
     <div class="chart-wrap" style="height:240px"><canvas id="c-rev"></canvas></div>
-    <div class="sec">Todas as revisões em revistas <span class="sec-n" id="n-rev"></span></div>
+    <div class="sec">All Journal Reviews <span class="sec-n" id="n-rev"></span></div>
     <div id="rev-list"></div>
-    <div class="sec" style="margin-top:1rem">IPC — Memberships por ano</div>
+    <div class="sec" style="margin-top:1rem">IPC — Memberships by Year</div>
     <div class="chart-wrap" style="height:220px"><canvas id="c-ipc"></canvas></div>
-    <div class="sec">Todos os IPC memberships <span class="sec-n" id="n-ipc"></span></div>
+    <div class="sec">All IPC Memberships <span class="sec-n" id="n-ipc"></span></div>
     <div id="ipc-list"></div>
   </div>
 
   <!-- OUTREACH -->
   <div id="tab-outreach" class="tab">
     <div class="metrics" id="m-out"></div>
-    <div class="sec">Palestras e keynotes por ano</div>
-    <div class="legend"><span><b style="background:#D85A30"></b>Palestras</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
+    <div class="sec">Talks and Keynotes by Year</div>
+    <div class="legend"><span><b style="background:#D85A30"></b>Talks</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
     <div class="chart-wrap" style="height:220px"><canvas id="c-talks"></canvas></div>
-    <div class="sec">Todas as Palestras <span class="sec-n" id="n-pal"></span></div>
+    <div class="sec">All Talks <span class="sec-n" id="n-pal"></span></div>
     <div id="palestras-tbl"></div>
-    <div class="sec" style="margin-top:1rem">Todos os Keynotes <span class="sec-n" id="n-key"></span></div>
+    <div class="sec" style="margin-top:1rem">All Keynotes <span class="sec-n" id="n-key"></span></div>
     <div id="key-list"></div>
-    <div class="sec" style="margin-top:1rem">Conferências por ano</div>
+    <div class="sec" style="margin-top:1rem">Conferences by Year</div>
     <div class="chart-wrap" style="height:200px"><canvas id="c-conf"></canvas></div>
-    <div class="sec">Todas as Conferências <span class="sec-n" id="n-conf"></span></div>
+    <div class="sec">All Conferences <span class="sec-n" id="n-conf"></span></div>
     <div id="conf-tbl"></div>
     <div class="sec" style="margin-top:1rem">Visiting <span class="sec-n" id="n-vis"></span></div>
     <div id="visiting-tbl"></div>
-    <div class="sec" style="margin-top:1rem">Aulas no Exterior <span class="sec-n" id="n-aul"></span></div>
+    <div class="sec" style="margin-top:1rem">Teaching Abroad <span class="sec-n" id="n-aul"></span></div>
     <div id="aulas-tbl"></div>
   </div>
 
-  <!-- JÚRIS -->
+  <!-- JURIES -->
   <div id="tab-juris" class="tab">
     <div class="metrics" id="m-jur"></div>
-    <div class="sec">Júris por categoria</div>
+    <div class="sec">Juries by Category</div>
     <div class="chart-wrap" style="height:260px"><canvas id="c-juris"></canvas></div>
-    <div class="sec">Todos os Júris <span class="sec-n" id="n-jur"></span></div>
+    <div class="sec">All Juries <span class="sec-n" id="n-jur"></span></div>
     <div id="juris-tbl"></div>
   </div>
 
-  <!-- ORGANIZAÇÕES -->
+  <!-- ORGANIZATIONS -->
   <div id="tab-organizacoes" class="tab">
     <div class="metrics" id="m-org"></div>
-    <div class="sec">Organizações por tipo</div>
+    <div class="sec">Organizations by Type</div>
     <div class="chart-wrap" style="height:260px"><canvas id="c-org"></canvas></div>
-    <div class="sec">Todas as Organizações <span class="sec-n" id="n-org"></span></div>
+    <div class="sec">All Organizations <span class="sec-n" id="n-org"></span></div>
     <div id="org-tbl"></div>
   </div>
 
-  <!-- AVALIAÇÕES -->
+  <!-- EVALUATIONS -->
   <div id="tab-avaliacoes" class="tab">
     <div class="metrics" id="m-av"></div>
-    <div class="sec">Avaliações de Projeto <span class="sec-n" id="n-av"></span></div>
+    <div class="sec">Project Evaluations <span class="sec-n" id="n-av"></span></div>
     <div id="aval-tbl"></div>
   </div>
 
-  <!-- PROJETOS -->
+  <!-- PROJECTS -->
   <div id="tab-projects" class="tab">
     <div class="metrics" id="m-proj"></div>
-    <div class="sec">Projetos em curso <span class="sec-n" id="n-proj-a"></span></div>
+    <div class="sec">Active Projects <span class="sec-n" id="n-proj-a"></span></div>
     <div id="proj-active-tbl"></div>
-    <div class="sec" style="margin-top:1rem">Projetos concluídos <span class="sec-n" id="n-proj-d"></span></div>
+    <div class="sec" style="margin-top:1rem">Completed Projects <span class="sec-n" id="n-proj-d"></span></div>
     <div id="proj-done-tbl"></div>
   </div>
 
-  <!-- PRÉMIOS -->
+  <!-- AWARDS -->
   <div id="tab-awards" class="tab">
     <div class="metrics" id="m-aw"></div>
-    <div class="sec">Todos os Prémios e Distinções <span class="sec-n" id="n-aw"></span></div>
+    <div class="sec">All Awards and Distinctions <span class="sec-n" id="n-aw"></span></div>
     <div id="aw-list"></div>
   </div>
 </main>
 <footer id="foot" style="display:none">
   Dados: <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vSctRW4Esw6kMfqG58Hs1w2BvUl6nbWQJYU0qzkc_OEBOuhFyBUnlUNVg9nZdkESBMfyIMIge75q1NK/pubhtml" target="_blank">Google Sheet (cvjmac)</a>
-  — actualizado automaticamente a cada visita
+  — automatically updated on each visit
 </footer>
 
 <script>
@@ -214,22 +214,22 @@ const GID = {
   AlunosPhD:    '1546740421',
   TesesPhD:     '399740370',
   TesesMsC:     '1350300512',
-  Júris:        '636482405',
+  Juries:        '636482405',
   Conferências: '56951573',
   Visiting:     '828577074',
   Keynote:      '327508800',
   Palestras:    '1870012824',
-  Prémios:      '1298424927',
+  Awards:      '1298424927',
   Organizações: '1006044540',
   Aulas:        '1034510459',
-  Projetos:     '1344191889',
-  Avaliações:   '402033740',
+  Projects:     '1344191889',
+  Evaluations:   '402033740',
 };
 
 let DATA={}, CH={};
 
 (async()=>{
-  setSt('A carregar dados…');
+  setSt('Loading data…');
   try{
     await loadAll();
     // Debug: log column names for each sheet
@@ -241,7 +241,7 @@ let DATA={}, CH={};
     document.getElementById('foot').style.display='block';
     document.getElementById('status').className='ok';
   }catch(e){
-    setSt('Erro: '+e.message,true);
+    setSt('Error: '+e.message,true);
     console.error(e);
   }
 })();
@@ -338,12 +338,57 @@ function stripDatePrefix(s){
     .trim();
 }
 
-// Generate dynamic table — excludes specified columns
+// ── COLUMN NAME TRANSLATIONS (PT → EN) ───────────────────────────────
+const COL_EN = {
+  // General
+  'Ano':'Year','Ano Início':'Start Year','Ano Fim':'End Year',
+  'Nome':'Name','Título':'Title','Titulo':'Title',
+  'Tipo':'Type','Categoria':'Category','País':'Country','Pais':'Country',
+  'Local':'Location','Cidade':'City','Instituição':'Institution',
+  'Universidade':'University','Descrição':'Description','Descricao':'Description',
+  'Observações':'Notes','Observacoes':'Notes','Notas':'Notes',
+  'Data':'Date','Duração':'Duration','Duracao':'Duration',
+  'Papel':'Role','Função':'Role','Funcao':'Role',
+  'Programa':'Programme','Link':'Link','URL':'URL',
+  // Supervision
+  'Aluno':'Student','Estudante':'Student','Candidato':'Candidate',
+  'Trabalho':'Thesis Title','Orientador':'Supervisor','Coorientador':'Co-supervisor',
+  'Mestrado':'Masters Programme','Doutoramento':'PhD Programme',
+  'Programa de Doutoramento':'PhD Programme',
+  // Reviews / IPC
+  'Revista':'Journal','Conferência':'Conference','Conferencia':'Conference',
+  'IPC':'Conference','Indexação':'Indexing','Indexacao':'Indexing',
+  'Editora':'Publisher','Volume':'Volume','Número':'Issue','Numero':'Issue',
+  // Talks / Outreach
+  'Evento':'Event','Palestra':'Talk','Keynote':'Keynote',
+  'Organização':'Organization','Organizacao':'Organization',
+  // Projects
+  'Acronimo':'Acronym','Acrónimo':'Acronym',
+  'Referencia':'Reference','Referência':'Reference',
+  'Financiamento':'Funding','Entidade':'Entity',
+  'IR':'PI','EmCurso':'Active','Âmbito':'Scope','Ambito':'Scope',
+  // Juries
+  'Autor':'Author','Área':'Field','Area':'Field',
+  // Awards
+  'Prémio':'Award','Premio':'Award','Distinção':'Distinction','Distincao':'Distinction',
+  // Organizations
+  'Papel na Organização':'Role','Papel na Organizacao':'Role',
+  // Evaluations
+  'Projeto':'Project','Agência':'Agency','Agencia':'Agency',
+  'Painel':'Panel','Programa de Financiamento':'Funding Programme',
+  // Visiting / Teaching
+  'Departamento':'Department','Curso':'Course','Disciplina':'Subject',
+  'Aula':'Class','Horas':'Hours',
+};
+
+function translateCol(k){ return COL_EN[k] || COL_EN[k.trim()] || k; }
+
+// Generate dynamic table — excludes specified columns, translates headers to EN
 function dynTable(rows, excludeCols=[]){
-  if(!rows||rows.length===0) return '<p style="font-size:13px;color:var(--hint);padding:8px 0">Sem dados</p>';
+  if(!rows||rows.length===0) return '<p style="font-size:13px;color:var(--hint);padding:8px 0">No data</p>';
   const excl=excludeCols.map(c=>c.toLowerCase());
   const keys=Object.keys(rows[0]).filter(k=>!excl.includes(k.toLowerCase()));
-  const hdr=keys.map(k=>`<th>${k}</th>`).join('');
+  const hdr=keys.map(k=>`<th>${translateCol(k)}</th>`).join('');
   const body=rows.map(r=>`<tr>${keys.map(k=>`<td>${r[k]||''}</td>`).join('')}</tr>`).join('');
   return `<table class="dt"><thead><tr>${hdr}</tr></thead><tbody>${body}</tbody></table>`;
 }
@@ -381,16 +426,16 @@ function ov(){
   const py=byYRobust(pal,yearCol(pal[0])||'Ano'); const ky2=byYRobust(ky,yearCol(ky[0])||'Ano');
   const ty=[...new Set([...Object.keys(py),...Object.keys(ky2)].map(Number))].sort((a,b)=>a-b);
   $('m-ov').innerHTML=
-    mc(phd.length,'PhD concluídos')+mc((DATA.AlunosPhD||[]).length,'PhD em curso')+
-    mc(msc.length,'MSc concluídos')+mc(rev.length,'Revisões em revistas')+
-    mc((DATA.IPC||[]).length,'IPC memberships')+mc(ky.length,'Keynotes')+
-    mc(pal.length,'Palestras')+mc((DATA.Prémios||[]).length,'Prémios');
+    mc(phd.length,'Completed PhDs')+mc((DATA.AlunosPhD||[]).length,'Ongoing PhDs')+
+    mc(msc.length,'Completed MScs')+mc(rev.length,'Reviews em revistas')+
+    mc((DATA.IPC||[]).length,'IPC Memberships')+mc(ky.length,'Keynotes')+
+    mc(pal.length,'Talks')+mc((DATA.Awards||[]).length,'Awards');
   mkC('c-ov','bar',yrs,[
     {label:'PhD',data:yrs.map(y=>pd[y]||0),backgroundColor:'#1a4f8a',borderRadius:3},
     {label:'MSc',data:yrs.map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
   mkC('c-ov-rev','line',rys,[{label:'Rev',data:rys.map(y=>ry[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:3,fill:true,tension:0.3}]);
   mkC('c-ov-talks','bar',ty,[
-    {label:'Palestras',data:ty.map(y=>py[y]||0),backgroundColor:'#D85A30',borderRadius:3},
+    {label:'Talks',data:ty.map(y=>py[y]||0),backgroundColor:'#D85A30',borderRadius:3},
     {label:'Keynotes', data:ty.map(y=>ky2[y]||0),backgroundColor:'#BA7517',borderRadius:3}],true);
 }
 
@@ -400,7 +445,7 @@ function sup(){
   const ym=msc.length>0?yearCol(msc[0]):'Ano';
   const pd=byYRobust(phd,yf),md=byYRobust(msc,ym);
   const py=sortY(pd),my=sortY(md);
-  $('m-sup').innerHTML=mc(phd.length,'PhD concluídos')+mc(on.length,'PhD em curso')+mc(msc.length,'MSc concluídos')+mc(py[0]||'—','Primeiro doutoramento');
+  $('m-sup').innerHTML=mc(phd.length,'Completed PhDs')+mc(on.length,'Ongoing PhDs')+mc(msc.length,'Completed MScs')+mc(py[0]||'—','First Doctorate');
   mkC('c-phd','bar',py,[{label:'PhD',data:py.map(y=>pd[y]),backgroundColor:'#1a4f8a',borderRadius:3}]);
   mkC('c-msc','bar',my,[{label:'MSc',data:my.map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
   $('phd-on').innerHTML=on.map(r=>{
@@ -440,7 +485,7 @@ function rev(){
   const ry=sortY(rd),iy=sortY(id_);
   const mx=Math.max(...Object.values(rd),0),mxy=ry.find(y=>rd[y]===mx)||'';
   const mxi=Math.max(...Object.values(id_),0),mxiy=iy.find(y=>id_[y]===mxi)||'';
-  $('m-rev').innerHTML=mc(rev.length,'Revisões em revistas')+mc(mx,'Pico anual',mxy+'')+mc(ipc.length,'IPC memberships')+mc(mxi,'Pico anual IPC',mxiy+'');
+  $('m-rev').innerHTML=mc(rev.length,'Reviews em revistas')+mc(mx,'Annual Peak',mxy+'')+mc(ipc.length,'IPC Memberships')+mc(mxi,'Annual Peak IPC',mxiy+'');
   mkC('c-rev','line',ry,[{label:'Rev',data:ry.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:4,fill:true,tension:0.3}]);
   setN('n-rev',rev.length); $('rev-list').innerHTML=dynTable(rev);
   mkC('c-ipc','bar',iy,[{label:'IPC',data:iy.map(y=>id_[y]),backgroundColor:'#6b48c7',borderRadius:3}]);
@@ -454,9 +499,9 @@ function out(){
   const yc=byYRobust(conf,yearCol(conf[0])||'Ano');
   const ty=[...new Set([...Object.keys(yp),...Object.keys(yk)].map(Number))].sort((a,b)=>a-b);
   const cy=sortY(yc);
-  $('m-out').innerHTML=mc(ky.length,'Keynotes')+mc(pal.length,'Palestras')+mc(conf.length,'Conferências')+mc(vis.length,'Visiting')+mc(aul.length,'Aulas exterior');
+  $('m-out').innerHTML=mc(ky.length,'Keynotes')+mc(pal.length,'Talks')+mc(conf.length,'Conferences')+mc(vis.length,'Visiting')+mc(aul.length,'Teaching Abroad');
   mkC('c-talks','bar',ty,[
-    {label:'Palestras',data:ty.map(y=>yp[y]||0),backgroundColor:'#D85A30',borderRadius:3},
+    {label:'Talks',data:ty.map(y=>yp[y]||0),backgroundColor:'#D85A30',borderRadius:3},
     {label:'Keynotes', data:ty.map(y=>yk[y]||0),backgroundColor:'#BA7517',borderRadius:3}],true);
   setN('n-pal',pal.length); $('palestras-tbl').innerHTML=dynTable(pal);
   setN('n-key',ky.length);  $('key-list').innerHTML=dynTable(ky);
@@ -477,26 +522,26 @@ function out(){
 }
 
 function jur(){
-  const jur=DATA.Júris||[];
+  const jur=DATA.Juries||[];
   const jkeys_all=jur.length>0?Object.keys(jur[0]):[];
   const catCol=jkeys_all.find(k=>k.toLowerCase().includes('categ')||k.toLowerCase().includes('tipo'))||jkeys_all[1]||'';
   const autorCol=jkeys_all.find(k=>k.toLowerCase().includes('autor')||k.toLowerCase().includes('candidato')||k.toLowerCase().includes('nome'))||'';
   const jcat=byVal(jur,catCol);
   const jk=Object.keys(jcat).sort((a,b)=>jcat[b]-jcat[a]);
-  $('m-jur').innerHTML=mc(jur.length,'Total júris')+mc(jcat['Doutoramento']||0,'Doutoramento')+mc(jcat['Mestrado']||0,'Mestrado')+mc(jcat['Agregação']||0,'Agregação');
+  $('m-jur').innerHTML=mc(jur.length,'Total Juries')+mc(jcat['Doctorate']||0,'Doctorate')+mc(jcat['Masters']||0,'Masters')+mc(jcat['Habilitation']||0,'Habilitation');
   if(jk.length>0) mkPie('c-juris',jk,jk.map(k=>jcat[k]),PALETTE);
-  else { const jy=byYRobust(jur,yearCol(jur[0])||'Ano'),jys=sortY(jy); mkC('c-juris','bar',jys,[{label:'Júris',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]); }
-  const ORDER=['Agregação','Doutoramento','Mestrado','Planeamento'];
+  else { const jy=byYRobust(jur,yearCol(jur[0])||'Ano'),jys=sortY(jy); mkC('c-juris','bar',jys,[{label:'Juries',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]); }
+  const ORDER=['Habilitation','Doctorate','Masters','Planeamento'];
   const sortedJur=[...jur].sort((a,b)=>{
     const ai=ORDER.findIndex(o=>String(a[catCol]||'').toLowerCase().includes(o.toLowerCase()));
     const bi=ORDER.findIndex(o=>String(b[catCol]||'').toLowerCase().includes(o.toLowerCase()));
     return (ai===-1?99:ai)-(bi===-1?99:bi);
   });
   setN('n-jur',jur.length);
-  if(sortedJur.length===0){ $('juris-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados</p>'; return; }
+  if(sortedJur.length===0){ $('juris-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">No data</p>'; return; }
   const cols=Object.keys(sortedJur[0]);
-  const tipoColors={'Agregação':'b-purple','Doutoramento':'b-blue','Mestrado':'b-green','Planeamento':'b-amber'};
-  const hdr=cols.map(k=>`<th>${k}</th>`).join('');
+  const tipoColors={'Habilitation':'b-purple','Doctorate':'b-blue','Masters':'b-green','Planeamento':'b-amber'};
+  const hdr=cols.map(k=>`<th>${translateCol(k)}</th>`).join('');
   const body=sortedJur.map(r=>`<tr>${cols.map(k=>{
     const v=r[k]||'';
     if(k===catCol&&v){
@@ -515,26 +560,26 @@ function org(){
   const tipoCol=okeys_all.find(k=>k.toLowerCase().includes('tipo')||k.toLowerCase().includes('categ'))||okeys_all[1]||'';
   const ocat=byVal(orgD,tipoCol);
   const ok=Object.keys(ocat).sort((a,b)=>ocat[b]-ocat[a]);
-  $('m-org').innerHTML=mc(orgD.length,'Total organizações');
+  $('m-org').innerHTML=mc(orgD.length,'Total Organizations');
   if(ok.length>0) mkPie('c-org',ok,ok.map(k=>ocat[k]),PALETTE.slice(3));
   else { const oy=byYRobust(orgD,yearCol(orgD[0])||'Ano'),oys=sortY(oy); mkC('c-org','bar',oys,[{label:'Org',data:oys.map(y=>oy[y]),backgroundColor:'#6b48c7',borderRadius:3}]); }
   setN('n-org',orgD.length); $('org-tbl').innerHTML=dynTable(orgD);
 }
 
 function av(){
-  const avD=DATA.Avaliações||[];
-  $('m-av').innerHTML=mc(avD.length,'Total avaliações');
+  const avD=DATA.Evaluations||[];
+  $('m-av').innerHTML=mc(avD.length,'Total Evaluations');
   setN('n-av',avD.length);
   if(avD.length===0){
-    $('aval-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados. GID actual: 402033740. Verifique na consola (F12).</p>';
-    console.warn('Avaliações vazia. Todos os dados:', DATA);
+    $('aval-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">No data. GID actual: 402033740. Check browser console (F12).</p>';
+    console.warn('Evaluations vazia. Todos os dados:', DATA);
   } else {
     $('aval-tbl').innerHTML=dynTable(avD);
   }
 }
 
 function proj(){
-  const all=DATA.Projetos||[];
+  const all=DATA.Projects||[];
   const keys=all.length>0?Object.keys(all[0]):[];
   const ecCol=keys.find(k=>k.toLowerCase().includes('emcurso')||k.toLowerCase().includes('curso'))||'EmCurso';
   const irCol=keys.find(k=>k.toLowerCase()==='ir')||'IR';
@@ -543,15 +588,15 @@ function proj(){
   const done=all.filter(r=>!isActive(r));
   const excludeCols=[ecCol,'EmCurso','emcurso'];
   $('m-proj').innerHTML=
-    mc(all.length,'Total projetos')+mc(active.length,'Em curso')+mc(done.length,'Concluídos')+
-    mc(all.filter(r=>{const v=String(r[irCol]||'').trim().toUpperCase();return v==='S'||v==='SIM';}).length,'Como IR','investigador responsável');
+    mc(all.length,'Total Projects')+mc(active.length,'Active')+mc(done.length,'Completed')+
+    mc(all.filter(r=>{const v=String(r[irCol]||'').trim().toUpperCase();return v==='S'||v==='SIM';}).length,'As PI','principal investigator');
   setN('n-proj-a',active.length); $('proj-active-tbl').innerHTML=dynTable(active,excludeCols);
   setN('n-proj-d',done.length);   $('proj-done-tbl').innerHTML=dynTable(done,excludeCols);
 }
 
 function aw(){
-  const all=DATA.Prémios||[];
-  $('m-aw').innerHTML=mc(all.length,'Prémios e distinções');
+  const all=DATA.Awards||[];
+  $('m-aw').innerHTML=mc(all.length,'Awards e distinções');
   setN('n-aw',all.length); $('aw-list').innerHTML=dynTable(all);
 }
 
