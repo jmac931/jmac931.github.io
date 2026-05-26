@@ -7,14 +7,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root{
-  --blue:#1a4f8a;--blue-l:#e8f0fb;--green:#1D9E75;--amber:#BA7517;--coral:#D85A30;
+  --blue:#1a4f8a;--blue-l:#e8f0fb;--green:#1D9E75;--amber:#BA7517;--coral:#D85A30;--purple:#6b48c7;
   --bg:#f5f5f3;--bd:rgba(0,0,0,0.09);--text:#1a1a1a;--muted:#666;--hint:#999;
   --r:10px;--rs:6px;
 }
 @media(prefers-color-scheme:dark){
   :root{--blue:#5b9bd5;--blue-l:#1a2d45;--bg:#1e1e1c;--bd:rgba(255,255,255,0.1);--text:#f0f0ee;--muted:#aaa;--hint:#666;}
   body{background:#141412;}
-  .card,.award-card{background:#2a2a28!important;}
+  .card,.award-card,.pill{background:#2a2a28!important;}
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);background:var(--bg);}
@@ -32,10 +32,12 @@ nav button{font-size:13px;padding:6px 13px;border-radius:var(--rs);border:.5px s
 nav button:hover{background:var(--blue-l);}
 nav button.active{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:500;}
 .tab{display:none;}.tab.active{display:block;}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.4rem;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.4rem;}
+@media(max-width:700px){.grid2{grid-template-columns:1fr;}}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.4rem;}
 .card{background:#fff;border:.5px solid var(--bd);border-radius:var(--r);}
 .metric.card{padding:13px 15px;}
-.metric-val{font-size:28px;font-weight:500;color:var(--blue);line-height:1.1;}
+.metric-val{font-size:26px;font-weight:500;color:var(--blue);line-height:1.1;}
 .metric-lbl{font-size:12px;color:var(--muted);margin-top:4px;}
 .metric-sub{font-size:11px;color:var(--hint);margin-top:2px;}
 .sec{font-size:13px;font-weight:500;color:var(--muted);margin:1.2rem 0 9px;}
@@ -55,11 +57,15 @@ table.dt{width:100%;border-collapse:collapse;font-size:13px;}
 table.dt th{text-align:left;padding:7px 9px;border-bottom:1px solid var(--bd);color:var(--muted);font-weight:500;font-size:12px;}
 table.dt td{padding:7px 9px;border-bottom:.5px solid var(--bd);color:var(--text);vertical-align:top;}
 table.dt tr:last-child td{border-bottom:none;}
-.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:9px;}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:9px;white-space:nowrap;}
 .b-blue{background:var(--blue-l);color:var(--blue);}
 .b-green{background:#e8f5f0;color:#1D9E75;}
 .b-gray{background:var(--bg);color:var(--muted);}
 .b-amber{background:#fef3e2;color:#BA7517;}
+.b-coral{background:#fdeee9;color:#D85A30;}
+.b-purple{background:#ede9fb;color:#6b48c7;}
+.pill-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:1rem;}
+.pill{font-size:12px;padding:3px 10px;border-radius:20px;background:#fff;color:var(--muted);border:.5px solid var(--bd);}
 footer{padding:1.2rem 2rem;font-size:12px;color:var(--hint);border-top:.5px solid var(--bd);margin-top:1.5rem;}
 footer a{color:var(--blue);text-decoration:none;}
 </style>
@@ -76,75 +82,162 @@ footer a{color:var(--blue);text-decoration:none;}
     <button onclick="tab('supervision',this)">Supervisão</button>
     <button onclick="tab('reviews',this)">Revisões</button>
     <button onclick="tab('outreach',this)">Outreach</button>
+    <button onclick="tab('academic',this)">Académico</button>
     <button onclick="tab('projects',this)">Projetos</button>
     <button onclick="tab('awards',this)">Prémios</button>
   </nav>
+
+  <!-- VISÃO GERAL -->
   <div id="tab-overview" class="tab active">
     <div class="metrics" id="m-ov"></div>
-    <div class="sec">Doutoramentos e mestrados por ano</div>
-    <div class="legend"><span><b style="background:#1a4f8a"></b>Doutoramentos</span><span><b style="background:#1D9E75"></b>Mestrados</span></div>
-    <div class="chart-wrap" style="height:260px"><canvas id="c-ov" role="img" aria-label="Doutoramentos e mestrados por ano"></canvas></div>
+    <div class="grid2">
+      <div>
+        <div class="sec">Doutoramentos e mestrados por ano</div>
+        <div class="legend"><span><b style="background:#1a4f8a"></b>PhD</span><span><b style="background:#1D9E75"></b>MSc</span></div>
+        <div class="chart-wrap" style="height:220px"><canvas id="c-ov" role="img" aria-label="PhD e MSc por ano"></canvas></div>
+      </div>
+      <div>
+        <div class="sec">Revisões em revistas por ano</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="c-ov-rev" role="img" aria-label="Revisões por ano"></canvas></div>
+      </div>
+    </div>
+    <div class="sec">Palestras e keynotes por ano</div>
+    <div class="legend"><span><b style="background:#D85A30"></b>Palestras</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="c-ov-talks" role="img" aria-label="Palestras e keynotes por ano"></canvas></div>
   </div>
+
+  <!-- SUPERVISÃO -->
   <div id="tab-supervision" class="tab">
     <div class="metrics" id="m-sup"></div>
-    <div class="sec">Doutoramentos concluídos por ano</div>
-    <div class="chart-wrap" style="height:220px"><canvas id="c-phd" role="img" aria-label="Doutoramentos por ano"></canvas></div>
-    <div class="sec">Mestrados concluídos por ano</div>
-    <div class="chart-wrap" style="height:200px"><canvas id="c-msc" role="img" aria-label="Mestrados por ano"></canvas></div>
-    <div class="sec">PhD em curso</div><div id="phd-on" class="tl"></div>
-    <div class="sec" style="margin-top:1.5rem">Últimos mestrados</div><div id="msc-rec"></div>
+    <div class="grid2">
+      <div>
+        <div class="sec">Doutoramentos concluídos por ano</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="c-phd" role="img" aria-label="Doutoramentos por ano"></canvas></div>
+      </div>
+      <div>
+        <div class="sec">Mestrados concluídos por ano</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="c-msc" role="img" aria-label="Mestrados por ano"></canvas></div>
+      </div>
+    </div>
+    <div class="sec">Doutoramentos em curso</div>
+    <div id="phd-on" class="tl"></div>
+    <div class="sec" style="margin-top:1.5rem">Últimos mestrados concluídos</div>
+    <div id="msc-rec"></div>
   </div>
+
+  <!-- REVISÕES -->
   <div id="tab-reviews" class="tab">
     <div class="metrics" id="m-rev"></div>
     <div class="sec">Revisões em revistas por ano</div>
-    <div class="chart-wrap" style="height:240px"><canvas id="c-rev" role="img" aria-label="Revisões por ano"></canvas></div>
-    <div class="sec">IPC — Conferências recentes</div><div id="ipc-list" class="tl"></div>
+    <div class="chart-wrap" style="height:240px"><canvas id="c-rev" role="img" aria-label="Revisões em revistas por ano"></canvas></div>
+    <div class="sec">IPC — Memberships por ano</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="c-ipc" role="img" aria-label="IPC por ano"></canvas></div>
+    <div class="sec">IPC — Conferências recentes</div>
+    <div id="ipc-list" class="tl"></div>
   </div>
+
+  <!-- OUTREACH -->
   <div id="tab-outreach" class="tab">
     <div class="metrics" id="m-out"></div>
     <div class="sec">Palestras e keynotes por ano</div>
     <div class="legend"><span><b style="background:#D85A30"></b>Palestras</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
     <div class="chart-wrap" style="height:220px"><canvas id="c-talks" role="img" aria-label="Palestras e keynotes por ano"></canvas></div>
-    <div class="sec">Keynotes</div><div id="key-list" class="tl"></div>
-  </div>
-  <div id="tab-projects" class="tab">
-    <div class="metrics" id="m-proj"></div>
-    <div class="sec">Todos os projetos</div>
-    <table class="dt" id="proj-tbl">
-      <thead><tr><th>Acrónimo</th><th>Título</th><th>Referência</th><th>Estado</th></tr></thead>
+    <div class="grid2">
+      <div>
+        <div class="sec">Keynotes</div>
+        <div id="key-list" class="tl"></div>
+      </div>
+      <div>
+        <div class="sec">Conferências por ano</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="c-conf" role="img" aria-label="Conferências por ano"></canvas></div>
+        <div class="sec">Visiting</div>
+        <div id="visiting-list" class="tl"></div>
+        <div class="sec" style="margin-top:1rem">Aulas no Exterior</div>
+        <div id="aulas-list" class="tl"></div>
+      </div>
+    </div>
+    <div class="sec">Todas as Palestras</div>
+    <table class="dt" id="palestras-table">
+      <thead><tr><th>Ano</th><th>Título / Evento</th><th>Local</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="sec" style="margin-top:1.5rem">Todas as Conferências</div>
+    <table class="dt" id="conf-table">
+      <thead><tr><th>Ano</th><th>Conferência</th><th>Local</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
+
+  <!-- ACADÉMICO -->
+  <div id="tab-academic" class="tab">
+    <div class="metrics" id="m-acad"></div>
+    <div class="grid2">
+      <div>
+        <div class="sec">Júris por categoria</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c-juris" role="img" aria-label="Júris por categoria"></canvas></div>
+      </div>
+      <div>
+        <div class="sec">Organizações por tipo</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c-org" role="img" aria-label="Organizações por tipo"></canvas></div>
+      </div>
+    </div>
+    <div class="sec">Todos os Júris de Provas Académicas</div>
+    <table class="dt" id="juris-table">
+      <thead><tr><th>Ano</th><th>Candidato / Título</th><th>Instituição</th><th>Categoria</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="sec" style="margin-top:1.5rem">Avaliações de Projeto</div>
+    <div id="aval-list"></div>
+  </div>
+
+  <!-- PROJETOS -->
+  <div id="tab-projects" class="tab">
+    <div class="metrics" id="m-proj"></div>
+    <div class="sec">Em curso</div>
+    <table class="dt" id="proj-active">
+      <thead><tr><th>Acrónimo</th><th>Título</th><th>Referência</th><th>IR</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="sec" style="margin-top:1.5rem">Concluídos</div>
+    <table class="dt" id="proj-done">
+      <thead><tr><th>Acrónimo</th><th>Título</th><th>Referência</th><th>IR</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- PRÉMIOS -->
   <div id="tab-awards" class="tab">
     <div class="metrics" id="m-aw"></div>
-    <div class="sec">Historial de prémios</div><div id="aw-list"></div>
+    <div class="sec">Historial de prémios e distinções</div>
+    <div id="aw-list"></div>
   </div>
 </main>
 <footer id="foot" style="display:none">
   Dados: <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vSctRW4Esw6kMfqG58Hs1w2BvUl6nbWQJYU0qzkc_OEBOuhFyBUnlUNVg9nZdkESBMfyIMIge75q1NK/pubhtml" target="_blank">Google Sheet (cvjmac)</a>
   — actualizado automaticamente a cada visita
 </footer>
+
 <script>
 const PUB  = '2PACX-1vSctRW4Esw6kMfqG58Hs1w2BvUl6nbWQJYU0qzkc_OEBOuhFyBUnlUNVg9nZdkESBMfyIMIge75q1NK';
 const BASE = `https://docs.google.com/spreadsheets/d/e/${PUB}`;
 
-// GIDs hardcoded — ordem das abas no Google Sheet publicado
-// Concursos=1298424927, Revistas=1481340375, IPC=1772665951,
-// AlunosPhD=1546740421, AlunosMsc=399740370, TesesPhD=1350300512,
-// TesesMsC=636482405, Júris=796354572, Nomeações=56951573,
-// Conferências=828577074, Visiting=327508800, Moderações=1870012824,
-// Keynote=1977243207, Missões=1298424927, Palestras=1006044540,
-// Escolas=1034510459, Prémios=1344191889, Organizações=402033740
+// GIDs verificados pelo utilizador
 const GID = {
-  TesesPhD:  '1350300512',
-  AlunosPhD: '1546740421',
-  TesesMsC:  '636482405',
-  Revistas:  '1481340375',
-  IPC:       '1772665951',
-  Palestras: '1006044540',
-  Keynote:   '1977243207',
-  Projetos:  '402033740',   // tentativa — Organizações/Projetos
-  'Prémios': '1344191889',
+  Revistas:     '1481340375',
+  IPC:          '1772665951',
+  AlunosPhD:    '1546740421',
+  TesesPhD:     '399740370',
+  TesesMsC:     '1350300512',
+  Júris:        '636482405',
+  Conferências: '56951573',
+  Visiting:     '828577074',
+  Keynote:      '327508800',
+  Palestras:    '1870012824',
+  Prémios:      '1298424927',
+  Organizações: '1006044540',
+  Aulas:        '1034510459',
+  Projetos:     '1344191889',
+  Avaliações:   '402033740',
 };
 
 let DATA={}, CH={};
@@ -158,7 +251,7 @@ let DATA={}, CH={};
     document.getElementById('foot').style.display='block';
     document.getElementById('status').className='ok';
   }catch(e){
-    setSt('Erro ao carregar: '+e.message, true);
+    setSt('Erro: '+e.message,true);
     console.error(e);
   }
 })();
@@ -170,11 +263,10 @@ function setSt(msg,err=false){
 
 async function fetchCsv(name){
   const gid=GID[name]; if(!gid) return [];
-  const url=`${BASE}/pub?output=csv&gid=${gid}&single=true`;
-  const r=await fetch(url); if(!r.ok) return [];
+  const r=await fetch(`${BASE}/pub?output=csv&gid=${gid}&single=true`);
+  if(!r.ok) return [];
   return parseCsv(await r.text());
 }
-
 function parseCsv(txt){
   const lines=txt.split(/\r?\n/).filter(l=>l.trim());
   if(lines.length<2) return [];
@@ -194,95 +286,209 @@ function csvRow(line){
   }
   r.push(cur); return r;
 }
-
 async function loadAll(){
   const entries=await Promise.all(Object.keys(GID).map(async n=>[n,await fetchCsv(n).catch(()=>[])]));
   entries.forEach(([n,d])=>DATA[n]=d);
 }
 
+// ── HELPERS ──────────────────────────────────────────────────────────
 const $=id=>document.getElementById(id);
-function numY(v){const n=parseFloat(v);return isNaN(n)?null:Math.floor(n);}
+function numY(v){const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:Math.floor(n);}
 function byY(rows,f){const c={};(rows||[]).forEach(r=>{const y=numY(r[f]);if(y)c[y]=(c[y]||0)+1;});return c;}
+function byVal(rows,f){const c={};(rows||[]).forEach(r=>{const v=(r[f]||'').trim();if(v)c[v]=(c[v]||0)+1;});return c;}
 function sortY(o){return Object.keys(o).map(Number).sort((a,b)=>a-b);}
+function first(r,...keys){for(const k of keys){if(r[k]&&r[k].trim())return r[k].trim();}return Object.values(r).find(v=>v)||'';}
 function mc(v,l,s=''){return `<div class="metric card"><div class="metric-val">${v}</div><div class="metric-lbl">${l}</div>${s?`<div class="metric-sub">${s}</div>`:''}</div>`;}
+
+const PALETTE=['#1a4f8a','#1D9E75','#D85A30','#BA7517','#6b48c7','#0891b2','#be185d','#059669','#d97706','#7c3aed'];
 const GC='rgba(128,128,128,0.12)',TC='#888';
-const bO=(stk=false)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-  scales:{x:{stacked:stk,grid:{color:GC},ticks:{color:TC,font:{size:11},autoSkip:false,maxRotation:45}},
-          y:{stacked:stk,grid:{color:GC},ticks:{color:TC,font:{size:11}},beginAtZero:true}}});
-function mkC(id,type,labels,datasets,stk=false){
+const bO=(stk=false,horiz=false)=>({
+  responsive:true,maintainAspectRatio:false,
+  indexAxis:horiz?'y':'x',
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{stacked:stk,grid:{color:GC},ticks:{color:TC,font:{size:10},autoSkip:false,maxRotation:horiz?0:45}},
+    y:{stacked:stk,grid:{color:GC},ticks:{color:TC,font:{size:10}},beginAtZero:true}
+  }
+});
+function mkC(id,type,labels,datasets,stk=false,horiz=false){
   if(CH[id])CH[id].destroy();
   const c=$(id);if(!c)return;
-  CH[id]=new Chart(c,{type,data:{labels,datasets},options:bO(stk)});
+  CH[id]=new Chart(c,{type,data:{labels,datasets},options:bO(stk,horiz)});
+}
+function mkPie(id,labels,data,colors){
+  if(CH[id])CH[id].destroy();
+  const c=$(id);if(!c)return;
+  CH[id]=new Chart(c,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors||PALETTE,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},color:TC,boxWidth:12}}}}});
 }
 
-function render(){ov();sup();rev();out();proj();aw();}
+// ── RENDER ───────────────────────────────────────────────────────────
+function render(){ov();sup();rev();out();acad();proj();aw();}
 
 function ov(){
   const pd=byY(DATA.TesesPhD,'Ano'),md=byY(DATA.TesesMsC,'Ano');
   const yrs=[...new Set([...Object.keys(pd),...Object.keys(md)].map(Number))].sort((a,b)=>a-b);
+  const rd=byY(DATA.Revistas,'Ano'),ry=sortY(rd);
+  const pal=byY(DATA.Palestras,'Ano'),key=byY(DATA.Keynote,'Ano');
+  const ty=[...new Set([...Object.keys(pal),...Object.keys(key)].map(Number))].sort((a,b)=>a-b).slice(-10);
   $('m-ov').innerHTML=
-    mc((DATA.TesesPhD||[]).length,'Doutoramentos concluídos')+
-    mc((DATA.AlunosPhD||[]).filter(r=>(r.Ano||'').toLowerCase().includes('desde')).length,'PhD em curso')+
-    mc((DATA.TesesMsC||[]).length,'Mestrados concluídos')+
+    mc((DATA.TesesPhD||[]).length,'PhD concluídos')+
+    mc((DATA.AlunosPhD||[]).length,'PhD em curso')+
+    mc((DATA.TesesMsC||[]).length,'MSc concluídos')+
     mc((DATA.Revistas||[]).length,'Revisões em revistas')+
     mc((DATA.IPC||[]).length,'IPC memberships')+
     mc((DATA.Keynote||[]).length,'Keynotes')+
-    mc((DATA.Projetos||[]).length,'Projetos')+
-    mc((DATA['Prémios']||[]).length,'Prémios e distinções');
+    mc((DATA.Palestras||[]).length,'Palestras')+
+    mc((DATA.Prémios||[]).length,'Prémios');
   mkC('c-ov','bar',yrs,[
     {label:'PhD',data:yrs.map(y=>pd[y]||0),backgroundColor:'#1a4f8a',borderRadius:3},
     {label:'MSc',data:yrs.map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
+  mkC('c-ov-rev','line',ry,[{label:'Revisões',data:ry.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:3,fill:true,tension:0.3}]);
+  mkC('c-ov-talks','bar',ty,[
+    {label:'Palestras',data:ty.map(y=>pal[y]||0),backgroundColor:'#D85A30',borderRadius:3},
+    {label:'Keynotes', data:ty.map(y=>key[y]||0),backgroundColor:'#BA7517',borderRadius:3}],true);
 }
 
 function sup(){
   const pd=byY(DATA.TesesPhD,'Ano'),md=byY(DATA.TesesMsC,'Ano');
   const py=sortY(pd),my=sortY(md);
-  const on=(DATA.AlunosPhD||[]).filter(r=>(r.Ano||'').toLowerCase().includes('desde'));
-  $('m-sup').innerHTML=mc((DATA.TesesPhD||[]).length,'PhD concluídos')+mc(on.length,'PhD em curso')+mc((DATA.TesesMsC||[]).length,'MSc concluídos')+mc(py[0]||'—','Primeiro doutoramento');
+  const on=DATA.AlunosPhD||[];
+  $('m-sup').innerHTML=
+    mc((DATA.TesesPhD||[]).length,'PhD concluídos')+
+    mc(on.length,'PhD em curso')+
+    mc((DATA.TesesMsC||[]).length,'MSc concluídos')+
+    mc(py[0]||'—','Primeiro doutoramento');
   mkC('c-phd','bar',py,[{label:'PhD',data:py.map(y=>pd[y]),backgroundColor:'#1a4f8a',borderRadius:3}]);
-  mkC('c-msc','bar',my.slice(-8),[{label:'MSc',data:my.slice(-8).map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
-  $('phd-on').innerHTML=on.map(r=>`<div class="tl-row"><div class="tl-yr">${(r.Ano||'').replace(/desde\s*/i,'')}</div><div class="tl-dot"></div><div class="tl-txt">${r.Aluno||''} — <em>${r.Trabalho||''}</em></div></div>`).join('');
-  const rec=[...DATA.TesesMsC||[]].sort((a,b)=>(numY(b.Ano)||0)-(numY(a.Ano)||0)).slice(0,8);
-  $('msc-rec').innerHTML=`<table class="dt"><thead><tr><th>Ano</th><th>Estudante</th><th>Título</th><th>Mestrado</th></tr></thead><tbody>${rec.map(r=>`<tr><td>${numY(r.Ano)||''}</td><td>${r.Nome||''}</td><td>${r['Título']||r.Titulo||''}</td><td><span class="badge b-blue">${(r.Mestrado||'').slice(0,45)}</span></td></tr>`).join('')}</tbody></table>`;
+  mkC('c-msc','bar',my.slice(-10),[{label:'MSc',data:my.slice(-10).map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
+  $('phd-on').innerHTML=on.map(r=>{
+    const nome=first(r,'Aluno','Nome','Estudante');
+    const trab=r.Trabalho||r['Título']||r.Titulo||'';
+    const ano=(r.Ano||'').replace(/desde\s*/i,'');
+    return `<div class="tl-row"><div class="tl-yr">${ano}</div><div class="tl-dot"></div><div class="tl-txt"><strong>${nome}</strong>${trab?' — '+trab:''}</div></div>`;
+  }).join('');
+  const rec=[...DATA.TesesMsC||[]].sort((a,b)=>(numY(b.Ano)||0)-(numY(a.Ano)||0));
+  $('msc-rec').innerHTML=`<table class="dt"><thead><tr><th>Ano</th><th>Estudante</th><th>Título</th><th>Mestrado</th></tr></thead><tbody>${
+    rec.map(r=>`<tr><td>${numY(r.Ano)||''}</td><td>${r.Nome||''}</td><td>${r['Título']||r.Titulo||''}</td><td><span class="badge b-blue">${(r.Mestrado||'').slice(0,50)}</span></td></tr>`).join('')
+  }</tbody></table>`;
 }
 
 function rev(){
-  const rd=byY(DATA.Revistas,'Ano'),yrs=sortY(rd);
-  const mx=Math.max(...Object.values(rd))||0,my=yrs.find(y=>rd[y]===mx)||'';
-  $('m-rev').innerHTML=mc((DATA.Revistas||[]).length,'Total revisões')+mc(mx,'Pico anual',my+'')+mc((DATA.IPC||[]).length,'IPC memberships');
-  mkC('c-rev','line',yrs,[{label:'Revisões',data:yrs.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:4,fill:true,tension:0.3}]);
-  $('ipc-list').innerHTML=(DATA.IPC||[]).slice(0,20).map(r=>{
-    const n=(r.IPC||r[Object.keys(r)[0]]||'').trim();
-    const c=n.match(/CORE\s+([A-Z*]+)/)?.[1];
-    return `<div class="tl-row"><div class="tl-dot"></div><div class="tl-txt">${n.replace(/\s*\{CORE.*?\}/,'').trim()} ${c?`<span class="badge ${c.includes('A')?'b-blue':'b-gray'}">CORE ${c}</span>`:''}</div></div>`;
+  const rd=byY(DATA.Revistas,'Ano'),ry=sortY(rd);
+  const id_=byY(DATA.IPC,'Ano'),iy=sortY(id_);
+  const mx=Math.max(...Object.values(rd),0),mxy=ry.find(y=>rd[y]===mx)||'';
+  $('m-rev').innerHTML=
+    mc((DATA.Revistas||[]).length,'Revisões em revistas')+
+    mc(mx,'Pico anual (revistas)',mxy+'')+
+    mc((DATA.IPC||[]).length,'IPC memberships')+
+    mc(Math.max(...Object.values(id_),0),'Pico anual (IPC)');
+  mkC('c-rev','line',ry,[{label:'Revisões',data:ry.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:4,fill:true,tension:0.3}]);
+  mkC('c-ipc','bar',iy,[{label:'IPC',data:iy.map(y=>id_[y]),backgroundColor:'#6b48c7',borderRadius:3}]);
+  $('ipc-list').innerHTML=(DATA.IPC||[]).map(r=>{
+    const n=first(r,'IPC','Conferência','Nome');
+    const core=n.match(/CORE\s+([A-Z*]+)/)?.[1];
+    return `<div class="tl-row"><div class="tl-dot" style="background:#6b48c7"></div><div class="tl-txt">${n.replace(/\s*\{CORE.*?\}/,'').trim()} ${core?`<span class="badge ${core.includes('A')?'b-purple':'b-gray'}">CORE ${core}</span>`:''}</div></div>`;
   }).join('');
 }
 
 function out(){
-  const pd=byY(DATA.Palestras,'Ano'),kd=byY(DATA.Keynote,'Ano');
-  const yrs=[...new Set([...Object.keys(pd),...Object.keys(kd)].map(Number))].sort((a,b)=>a-b).slice(-10);
-  $('m-out').innerHTML=mc((DATA.Keynote||[]).length,'Keynotes')+mc((DATA.Palestras||[]).length,'Palestras')+mc(Math.max(...Object.values(pd),0),'Pico anual','palestras');
-  mkC('c-talks','bar',yrs,[
-    {label:'Palestras',data:yrs.map(y=>pd[y]||0),backgroundColor:'#D85A30',borderRadius:3},
-    {label:'Keynotes', data:yrs.map(y=>kd[y]||0),backgroundColor:'#BA7517',borderRadius:3}],true);
-  $('key-list').innerHTML=(DATA.Keynote||[]).map(r=>`<div class="tl-row"><div class="tl-yr">${numY(r.Ano)||''}</div><div class="tl-dot"></div><div class="tl-txt">${(r.Nome||r[Object.keys(r)[0]]||'').trim()}</div></div>`).join('');
+  const pal=byY(DATA.Palestras,'Ano'),key=byY(DATA.Keynote,'Ano');
+  const conf=byY(DATA.Conferências,'Ano');
+  const ty=[...new Set([...Object.keys(pal),...Object.keys(key)].map(Number))].sort((a,b)=>a-b);
+  const cy=sortY(conf);
+  $('m-out').innerHTML=
+    mc((DATA.Keynote||[]).length,'Keynotes')+
+    mc((DATA.Palestras||[]).length,'Palestras')+
+    mc((DATA.Conferências||[]).length,'Conferências')+
+    mc((DATA.Visiting||[]).length,'Visiting')+
+    mc((DATA.Aulas||[]).length,'Aulas no exterior');
+  mkC('c-talks','bar',ty,[
+    {label:'Palestras',data:ty.map(y=>pal[y]||0),backgroundColor:'#D85A30',borderRadius:3},
+    {label:'Keynotes', data:ty.map(y=>key[y]||0),backgroundColor:'#BA7517',borderRadius:3}],true);
+  $('key-list').innerHTML=(DATA.Keynote||[]).map(r=>`<div class="tl-row"><div class="tl-yr">${numY(r.Ano)||''}</div><div class="tl-dot" style="background:#BA7517"></div><div class="tl-txt">${first(r,'Nome','Evento','Título')}</div></div>`).join('');
+  mkC('c-conf','bar',cy,[{label:'Conferências',data:cy.map(y=>conf[y]||0),backgroundColor:'#0891b2',borderRadius:3}]);
+  $('visiting-list').innerHTML=(DATA.Visiting||[]).map(r=>`<div class="tl-row"><div class="tl-yr">${numY(r.Ano)||''}</div><div class="tl-dot" style="background:#0891b2"></div><div class="tl-txt">${first(r,'Instituição','Universidade','Nome')}</div></div>`).join('');
+  $('aulas-list').innerHTML=(DATA.Aulas||[]).map(r=>`<div class="tl-row"><div class="tl-yr">${numY(r.Ano)||''}</div><div class="tl-dot" style="background:#059669"></div><div class="tl-txt">${first(r,'Instituição','Universidade','Nome','Aula')}</div></div>`).join('');
+  // Tabela completa Palestras
+  document.querySelector('#palestras-table tbody').innerHTML=(DATA.Palestras||[]).map(r=>`<tr>
+    <td>${numY(r.Ano)||''}</td>
+    <td>${first(r,'Título','Titulo','Nome','Palestra','Evento')}</td>
+    <td>${r.Local||r.País||r.Pais||r.Cidade||''}</td>
+  </tr>`).join('');
+  // Tabela completa Conferências
+  document.querySelector('#conf-table tbody').innerHTML=(DATA.Conferências||[]).map(r=>`<tr>
+    <td>${numY(r.Ano)||''}</td>
+    <td>${first(r,'Conferência','Conferencia','Nome','Título')}</td>
+    <td>${r.Local||r.País||r.Pais||r.Cidade||''}</td>
+  </tr>`).join('');
+}
+
+function acad(){
+  // Júris por categoria
+  const jcat=byVal(DATA.Júris,'Categoria');
+  const jkeys=Object.keys(jcat).sort((a,b)=>jcat[b]-jcat[a]);
+  // Organizações por tipo
+  const ocat=byVal(DATA.Organizações,'Tipo');
+  const okeys=Object.keys(ocat).sort((a,b)=>ocat[b]-ocat[a]);
+  $('m-acad').innerHTML=
+    mc((DATA.Júris||[]).length,'Júris de provas académicas')+
+    mc((DATA.Organizações||[]).length,'Organizações de eventos')+
+    mc((DATA.Avaliações||[]).length,'Avaliações de projeto');
+  if(jkeys.length>0){
+    mkPie('c-juris',jkeys,jkeys.map(k=>jcat[k]),PALETTE);
+  } else {
+    // fallback: bar por ano
+    const jy=byY(DATA.Júris,'Ano'),jys=sortY(jy);
+    mkC('c-juris','bar',jys,[{label:'Júris',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]);
+  }
+  if(okeys.length>0){
+    mkPie('c-org',okeys,okeys.map(k=>ocat[k]),PALETTE.slice(3));
+  } else {
+    const oy=byY(DATA.Organizações,'Ano'),oys=sortY(oy);
+    mkC('c-org','bar',oys,[{label:'Org.',data:oys.map(y=>oy[y]),backgroundColor:'#6b48c7',borderRadius:3}]);
+  }
+  $('aval-list').innerHTML=`<table class="dt"><thead><tr><th>Ano</th><th>Projeto / Agência</th><th>Tipo</th></tr></thead><tbody>${
+    (DATA.Avaliações||[]).map(r=>`<tr>
+      <td>${numY(r.Ano)||''}</td>
+      <td>${first(r,'Projeto','Agência','Nome','Título')}</td>
+      <td><span class="badge b-amber">${r.Tipo||r.Categoria||''}</span></td>
+    </tr>`).join('')
+  }</tbody></table>`;
+  // Tabela completa Júris
+  document.querySelector('#juris-table tbody').innerHTML=(DATA.Júris||[]).map(r=>`<tr>
+    <td>${numY(r.Ano)||''}</td>
+    <td>${first(r,'Candidato','Título','Titulo','Nome','Trabalho')}</td>
+    <td>${r.Instituição||r.Universidade||r.Local||''}</td>
+    <td><span class="badge b-coral">${r.Categoria||r.Tipo||''}</span></td>
+  </tr>`).join('');
 }
 
 function proj(){
   const all=DATA.Projetos||[];
-  $('m-proj').innerHTML=mc(all.length,'Total projetos')+mc(all.filter(r=>r.EmCurso==='S').length,'Em curso')+mc(all.filter(r=>r.IR==='S').length,'Como IR','investigador responsável');
-  document.querySelector('#proj-tbl tbody').innerHTML=all.map(r=>`<tr>
+  const active=all.filter(r=>(r.EmCurso||'').toUpperCase()==='S');
+  const done=all.filter(r=>(r.EmCurso||'').toUpperCase()!=='S');
+  $('m-proj').innerHTML=
+    mc(all.length,'Total projetos')+
+    mc(active.length,'Em curso')+
+    mc(done.length,'Concluídos')+
+    mc(all.filter(r=>(r.IR||'').toUpperCase()==='S').length,'Como IR','investigador responsável');
+  const projRow=r=>`<tr>
     <td><strong>${r.Acronimo||r['Acrónimo']||''}</strong></td>
     <td>${r.Titulo||r['Título']||''}</td>
     <td style="font-size:11px;color:var(--hint)">${r.Referencia||r['Referência']||''}</td>
-    <td>${r.EmCurso==='S'?'<span class="badge b-green">Em curso</span>':'<span class="badge b-gray">Concluído</span>'}${r.IR==='S'?' <span class="badge b-amber">IR</span>':''}</td>
-  </tr>`).join('');
+    <td>${(r.IR||'').toUpperCase()==='S'?'<span class="badge b-amber">IR</span>':'<span class="badge b-gray">Membro</span>'}</td>
+  </tr>`;
+  document.querySelector('#proj-active tbody').innerHTML=active.map(projRow).join('');
+  document.querySelector('#proj-done tbody').innerHTML=done.map(projRow).join('');
 }
 
 function aw(){
-  const all=DATA['Prémios']||[];
+  const all=DATA.Prémios||[];
   $('m-aw').innerHTML=mc(all.length,'Prémios e distinções');
-  $('aw-list').innerHTML=all.map(r=>`<div class="award-card"><div class="award-yr">${numY(r.Ano)||''}</div><div class="award-txt">${(r.Nome||r[Object.keys(r)[0]]||'').trim()}</div></div>`).join('');
+  $('aw-list').innerHTML=all.map(r=>`<div class="award-card">
+    <div class="award-yr">${numY(r.Ano)||''}</div>
+    <div class="award-txt">${first(r,'Nome','Prémio','Descrição')}</div>
+  </div>`).join('');
 }
 
 function tab(id,btn){
