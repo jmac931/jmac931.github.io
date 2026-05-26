@@ -214,16 +214,16 @@ const GID = {
   AlunosPhD:    '1546740421',
   TesesPhD:     '399740370',
   TesesMsC:     '1350300512',
-  Juries:        '636482405',
+  Júris:         '636482405',
   Conferências: '56951573',
   Visiting:     '828577074',
   Keynote:      '327508800',
   Palestras:    '1870012824',
-  Awards:      '1298424927',
+  Prémios:       '1298424927',
   Organizações: '1006044540',
   Aulas:        '1034510459',
-  Projects:     '1344191889',
-  Evaluations:   '402033740',
+  Projetos:      '1344191889',
+  Avaliações:    '402033740',
 };
 
 let DATA={}, CH={};
@@ -429,7 +429,7 @@ function ov(){
     mc(phd.length,'Completed PhDs')+mc((DATA.AlunosPhD||[]).length,'Ongoing PhDs')+
     mc(msc.length,'Completed MScs')+mc(rev.length,'Journal Reviews')+
     mc((DATA.IPC||[]).length,'IPC Memberships')+mc(ky.length,'Keynotes')+
-    mc(pal.length,'Talks')+mc((DATA.Awards||[]).length,'Awards');
+    mc(pal.length,'Talks')+mc((DATA.Prémios||[]).length,'Awards');
   mkC('c-ov','bar',yrs,[
     {label:'PhD',data:yrs.map(y=>pd[y]||0),backgroundColor:'#1a4f8a',borderRadius:3},
     {label:'MSc',data:yrs.map(y=>md[y]||0),backgroundColor:'#1D9E75',borderRadius:3}]);
@@ -522,31 +522,54 @@ function out(){
 }
 
 function jur(){
-  const jur=DATA.Juries||[];
+  const jur=DATA.Júris||[];
   const jkeys_all=jur.length>0?Object.keys(jur[0]):[];
   const catCol=jkeys_all.find(k=>k.toLowerCase().includes('categ')||k.toLowerCase().includes('tipo'))||jkeys_all[1]||'';
   const autorCol=jkeys_all.find(k=>k.toLowerCase().includes('autor')||k.toLowerCase().includes('candidato')||k.toLowerCase().includes('nome'))||'';
-  const jcat=byVal(jur,catCol);
+  const instCol=jkeys_all.find(k=>k.toLowerCase().includes('instit')||k.toLowerCase().includes('univer'))||'';
+
+  // Count using partial match on actual PT values in the data
+  const count=term=>jur.filter(r=>String(r[catCol]||'').toLowerCase().includes(term)).length;
+  $('m-jur').innerHTML=
+    mc(jur.length,'Total Juries')+
+    mc(count('agrega'),'Habilitation')+
+    mc(count('doutor'),'Doctorate')+
+    mc(count('mestr'),'Masters')+
+    mc(count('planea'),'Thesis Planning');
+
+  // Chart — use raw values from data
+  const jcat={}; jur.forEach(r=>{const v=(r[catCol]||'').trim();if(v)jcat[v]=(jcat[v]||0)+1;});
   const jk=Object.keys(jcat).sort((a,b)=>jcat[b]-jcat[a]);
-  $('m-jur').innerHTML=mc(jur.length,'Total Juries')+mc(jcat['Doctorate']||0,'Doctorate')+mc(jcat['Masters']||0,'Masters')+mc(jcat['Habilitation']||0,'Habilitation');
   if(jk.length>0) mkPie('c-juris',jk,jk.map(k=>jcat[k]),PALETTE);
   else { const jy=byYRobust(jur,yearCol(jur[0])||'Ano'),jys=sortY(jy); mkC('c-juris','bar',jys,[{label:'Juries',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]); }
-  const ORDER=['Habilitation','Doctorate','Masters','Planeamento'];
+
+  // Sort: Agregação → Doutoramento → Mestrado → Planeamento (partial match on PT)
+  const ORDER=['agrega','doutor','mestr','planea'];
   const sortedJur=[...jur].sort((a,b)=>{
-    const ai=ORDER.findIndex(o=>String(a[catCol]||'').toLowerCase().includes(o.toLowerCase()));
-    const bi=ORDER.findIndex(o=>String(b[catCol]||'').toLowerCase().includes(o.toLowerCase()));
+    const av=String(a[catCol]||'').toLowerCase();
+    const bv=String(b[catCol]||'').toLowerCase();
+    const ai=ORDER.findIndex(o=>av.includes(o));
+    const bi=ORDER.findIndex(o=>bv.includes(o));
     return (ai===-1?99:ai)-(bi===-1?99:bi);
   });
+
   setN('n-jur',jur.length);
   if(sortedJur.length===0){ $('juris-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">No data</p>'; return; }
   const cols=Object.keys(sortedJur[0]);
-  const tipoColors={'Habilitation':'b-purple','Doctorate':'b-blue','Masters':'b-green','Planeamento':'b-amber'};
   const hdr=cols.map(k=>`<th>${translateCol(k)}</th>`).join('');
   const body=sortedJur.map(r=>`<tr>${cols.map(k=>{
     const v=r[k]||'';
     if(k===catCol&&v){
-      const cls=Object.keys(tipoColors).find(t=>v.toLowerCase().includes(t.toLowerCase()));
-      return `<td><span class="badge ${cls?tipoColors[cls]:'b-gray'}">${v}</span></td>`;
+      const vl=v.toLowerCase();
+      let cls='b-gray';
+      if(vl.includes('agrega'))      cls='b-purple';
+      else if(vl.includes('doutor')) cls='b-blue';
+      else if(vl.includes('mestr'))  cls='b-green';
+      else if(vl.includes('planea')) cls='b-amber';
+      // "outside UM" badge for Masters not at UMinho
+      const inst=String(r[instCol]||'').toLowerCase();
+      const outsideUM=vl.includes('mestr')&&instCol&&inst&&!inst.includes('minho');
+      return `<td><span class="badge ${cls}">${v}</span>${outsideUM?' <span class="badge b-coral">outside UM</span>':''}</td>`;
     }
     if(k===autorCol&&v) return `<td><strong>${v}</strong></td>`;
     return `<td>${v}</td>`;
@@ -567,7 +590,7 @@ function org(){
 }
 
 function av(){
-  const avD=DATA.Evaluations||[];
+  const avD=DATA.Avaliações||[];
   $('m-av').innerHTML=mc(avD.length,'Total Evaluations');
   setN('n-av',avD.length);
   if(avD.length===0){
@@ -579,7 +602,7 @@ function av(){
 }
 
 function proj(){
-  const all=DATA.Projects||[];
+  const all=DATA.Projetos||[];
   const keys=all.length>0?Object.keys(all[0]):[];
   const ecCol=keys.find(k=>k.toLowerCase().includes('emcurso')||k.toLowerCase().includes('curso'))||'EmCurso';
   const irCol=keys.find(k=>k.toLowerCase()==='ir')||'IR';
@@ -595,7 +618,7 @@ function proj(){
 }
 
 function aw(){
-  const all=DATA.Awards||[];
+  const all=DATA.Prémios||[];
   $('m-aw').innerHTML=mc(all.length,'Awards e distinções');
   setN('n-aw',all.length); $('aw-list').innerHTML=dynTable(all);
 }
