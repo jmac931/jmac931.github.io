@@ -122,7 +122,7 @@ footer a{color:var(--blue);text-decoration:none;}
     </div>
     <div class="sec">Doutoramentos em curso</div>
     <div id="phd-on" class="tl"></div>
-    <div class="sec" style="margin-top:1rem">Todos os Mestrados concluídos <span class="sec-n" id="n-msc"></span></div>
+    <div class="sec" style="margin-top:1rem">Mestrados Concluídos <span class="sec-n" id="n-msc"></span></div>
     <div id="msc-rec"></div>
   </div>
 
@@ -294,12 +294,43 @@ function fv(r,...keys){
   return Object.values(r).find(v=>v&&v.trim())||'';
 }
 
-// Find year column name in a row
+// Find year column name in a row — tries 'Ano', then any col with 4-digit year values
 function yearCol(row){
+  if(!row) return null;
   for(const k of Object.keys(row)){
     if(k.toLowerCase()==='ano') return k;
   }
+  // fallback: find a column whose first value looks like a year
+  for(const k of Object.keys(row)){
+    if(/\b(19|20)\d{2}\b/.test(String(row[k]||''))) return k;
+  }
   return null;
+}
+
+// Extract year from any value (handles "Jan, 2023", "2023-01-01", "2023", etc.)
+function extractYear(v){
+  const m=String(v||'').match(/\b(19|20)\d{2}\b/);
+  return m?parseInt(m[0]):null;
+}
+
+// byY using extractYear — more robust than numY for messy date strings
+function byYRobust(rows,f){
+  const c={};
+  (rows||[]).forEach(r=>{
+    const raw=r[f]||'';
+    const y=extractYear(raw)||numY(raw);
+    if(y&&y>1980&&y<2100) c[y]=(c[y]||0)+1;
+  });
+  return c;
+}
+
+// Strip "Mes, YYYY" or "Month YYYY" date prefixes from visiting strings
+function stripDatePrefix(s){
+  return String(s||'')
+    .replace(/^(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)[,\s]+\d{4}[,\s-]*/i,'')
+    .replace(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[,.\s]+\d{4}[,\s-]*/i,'')
+    .replace(/^\d{4}[,\s-]*/,'')
+    .trim();
 }
 
 // Generate dynamic table from all rows — shows ALL columns
@@ -385,11 +416,25 @@ function sup(){
 function rev(){
   const rev=DATA.Revistas||[],ipc=DATA.IPC||[];
   const yc=rev.length>0?yearCol(rev[0]):'Ano';
-  const yi=ipc.length>0?yearCol(ipc[0]):'Ano';
-  const rd=byY(rev,yc),id_=byY(ipc,yi);
+  // IPC: use robust year extraction since year may be in conference name or date column
+  const yi=ipc.length>0?yearCol(ipc[0]):null;
+  const rd=byYRobust(rev,yc);
+  // For IPC, try yearCol first; if empty, scan all columns for years
+  let id_={};
+  if(yi){ id_=byYRobust(ipc,yi); }
+  if(Object.keys(id_).length===0){
+    // scan all columns
+    ipc.forEach(r=>{
+      for(const k of Object.keys(r)){
+        const y=extractYear(r[k])||numY(r[k]);
+        if(y&&y>1990&&y<2100){ id_[y]=(id_[y]||0)+1; break; }
+      }
+    });
+  }
   const ry=sortY(rd),iy=sortY(id_);
   const mx=Math.max(...Object.values(rd),0),mxy=ry.find(y=>rd[y]===mx)||'';
-  $('m-rev').innerHTML=mc(rev.length,'Revisões em revistas')+mc(mx,'Pico anual',mxy+'')+mc(ipc.length,'IPC memberships')+mc(Math.max(...Object.values(id_),0),'Pico anual IPC');
+  const mxi=Math.max(...Object.values(id_),0),mxiy=iy.find(y=>id_[y]===mxi)||'';
+  $('m-rev').innerHTML=mc(rev.length,'Revisões em revistas')+mc(mx,'Pico anual',mxy+'')+mc(ipc.length,'IPC memberships')+mc(mxi,'Pico anual IPC',mxiy+'');
   mkC('c-rev','line',ry,[{label:'Rev',data:ry.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:4,fill:true,tension:0.3}]);
   setN('n-rev',rev.length);
   $('rev-list').innerHTML=dynTable(rev);
@@ -413,13 +458,24 @@ function out(){
   setN('n-key',ky.length);  $('key-list').innerHTML=dynTable(ky);
   mkC('c-conf','bar',cy,[{label:'Conf',data:cy.map(y=>yc[y]||0),backgroundColor:'#0891b2',borderRadius:3}]);
   setN('n-conf',conf.length); $('conf-tbl').innerHTML=dynTable(conf);
-  setN('n-vis',vis.length);  $('visiting-tbl').innerHTML=dynTable(vis);
+  setN('n-vis',vis.length);
+  // Visiting: strip "Mes, YYYY" date prefix from first text column
+  $('visiting-tbl').innerHTML=dynTable(vis.map(r=>{
+    const cleaned={...r};
+    const keys=Object.keys(r);
+    // Clean all string fields that start with a month name
+    keys.forEach(k=>{
+      if(typeof cleaned[k]==='string'&&/^(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(cleaned[k].trim())){
+        cleaned[k]=stripDatePrefix(cleaned[k]);
+      }
+    });
+    return cleaned;
+  }));
   setN('n-aul',aul.length);  $('aulas-tbl').innerHTML=dynTable(aul);
 }
 
 function acad(){
   const jur=DATA.Júris||[],org=DATA.Organizações||[],av=DATA.Avaliações||[];
-  // Try to find category/type columns
   const jkeys_all=jur.length>0?Object.keys(jur[0]):[];
   const catCol=jkeys_all.find(k=>k.toLowerCase().includes('categ')||k.toLowerCase().includes('tipo'))||jkeys_all[1]||'';
   const okeys_all=org.length>0?Object.keys(org[0]):[];
@@ -429,11 +485,46 @@ function acad(){
   const ok=Object.keys(ocat).sort((a,b)=>ocat[b]-ocat[a]);
   $('m-acad').innerHTML=mc(jur.length,'Júris académicos')+mc(org.length,'Organizações')+mc(av.length,'Avaliações');
   if(jk.length>0) mkPie('c-juris',jk,jk.map(k=>jcat[k]),PALETTE);
-  else { const jy=byY(jur,'Ano'),jys=sortY(jy); mkC('c-juris','bar',jys,[{label:'Júris',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]); }
+  else { const jy=byYRobust(jur,yearCol(jur[0])||'Ano'),jys=sortY(jy); mkC('c-juris','bar',jys,[{label:'Júris',data:jys.map(y=>jy[y]),backgroundColor:'#D85A30',borderRadius:3}]); }
   if(ok.length>0) mkPie('c-org',ok,ok.map(k=>ocat[k]),PALETTE.slice(3));
-  else { const oy=byY(org,'Ano'),oys=sortY(oy); mkC('c-org','bar',oys,[{label:'Org',data:oys.map(y=>oy[y]),backgroundColor:'#6b48c7',borderRadius:3}]); }
-  setN('n-jur',jur.length); $('juris-tbl').innerHTML=dynTable(jur);
-  setN('n-av',av.length);   $('aval-tbl').innerHTML=dynTable(av);
+  else { const oy=byYRobust(org,yearCol(org[0])||'Ano'),oys=sortY(oy); mkC('c-org','bar',oys,[{label:'Org',data:oys.map(y=>oy[y]),backgroundColor:'#6b48c7',borderRadius:3}]); }
+
+  // Júris: sort by category order, highlight Tipo and Autor
+  const ORDER=['Agregação','Doutoramento','Mestrado','Planeamento de Tese','Planeamento de tese'];
+  const autorCol=jkeys_all.find(k=>k.toLowerCase().includes('autor')||k.toLowerCase().includes('candidato')||k.toLowerCase().includes('nome'))||'';
+  const sortedJur=[...jur].sort((a,b)=>{
+    const ai=ORDER.findIndex(o=>String(a[catCol]||'').toLowerCase().includes(o.toLowerCase()));
+    const bi=ORDER.findIndex(o=>String(b[catCol]||'').toLowerCase().includes(o.toLowerCase()));
+    const av_=ai===-1?99:ai, bv=bi===-1?99:bi;
+    return av_-bv;
+  });
+  setN('n-jur',jur.length);
+  // Build custom Júris table with colour-coded Tipo
+  if(sortedJur.length===0){ $('juris-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados</p>'; }
+  else {
+    const cols=Object.keys(sortedJur[0]);
+    const tipoColors={'Agregação':'b-purple','Doutoramento':'b-blue','Mestrado':'b-green','Planeamento de tese':'b-amber','Planeamento de Tese':'b-amber'};
+    const hdr=cols.map(k=>`<th>${k}</th>`).join('');
+    const body=sortedJur.map(r=>`<tr>${cols.map(k=>{
+      const v=r[k]||'';
+      if(k===catCol&&v){
+        const cls=Object.keys(tipoColors).find(t=>v.toLowerCase().includes(t.toLowerCase()));
+        return `<td><span class="badge ${cls?tipoColors[cls]:'b-gray'}">${v}</span></td>`;
+      }
+      if(k===autorCol&&v) return `<td><strong>${v}</strong></td>`;
+      return `<td>${v}</td>`;
+    }).join('')}</tr>`).join('');
+    $('juris-tbl').innerHTML=`<table class="dt"><thead><tr>${hdr}</tr></thead><tbody>${body}</tbody></table>`;
+  }
+
+  // Avaliações — show all rows, log if empty
+  setN('n-av',av.length);
+  if(av.length===0){
+    $('aval-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">Sem dados — verifique o GID da aba Avaliações (atual: 402033740)</p>';
+    console.warn('Avaliações está vazia. Dados recebidos:', DATA.Avaliações);
+  } else {
+    $('aval-tbl').innerHTML=dynTable(av);
+  }
 }
 
 function proj(){
