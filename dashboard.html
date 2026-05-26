@@ -427,7 +427,7 @@ function ov(){
   const ty=[...new Set([...Object.keys(py),...Object.keys(ky2)].map(Number))].sort((a,b)=>a-b);
   $('m-ov').innerHTML=
     mc(phd.length,'Completed PhDs')+mc((DATA.AlunosPhD||[]).length,'Ongoing PhDs')+
-    mc(msc.length,'Completed MScs')+mc(rev.length,'Reviews em revistas')+
+    mc(msc.length,'Completed MScs')+mc(rev.length,'Journal Reviews')+
     mc((DATA.IPC||[]).length,'IPC Memberships')+mc(ky.length,'Keynotes')+
     mc(pal.length,'Talks')+mc((DATA.Awards||[]).length,'Awards');
   mkC('c-ov','bar',yrs,[
@@ -485,7 +485,7 @@ function rev(){
   const ry=sortY(rd),iy=sortY(id_);
   const mx=Math.max(...Object.values(rd),0),mxy=ry.find(y=>rd[y]===mx)||'';
   const mxi=Math.max(...Object.values(id_),0),mxiy=iy.find(y=>id_[y]===mxi)||'';
-  $('m-rev').innerHTML=mc(rev.length,'Reviews em revistas')+mc(mx,'Annual Peak',mxy+'')+mc(ipc.length,'IPC Memberships')+mc(mxi,'Annual Peak IPC',mxiy+'');
+  $('m-rev').innerHTML=mc(rev.length,'Journal Reviews')+mc(mx,'Annual Peak',mxy+'')+mc(ipc.length,'IPC Memberships')+mc(mxi,'Annual Peak IPC',mxiy+'');
   mkC('c-rev','line',ry,[{label:'Rev',data:ry.map(y=>rd[y]),borderColor:'#1a4f8a',backgroundColor:'rgba(26,79,138,0.08)',pointBackgroundColor:'#1a4f8a',pointRadius:4,fill:true,tension:0.3}]);
   setN('n-rev',rev.length); $('rev-list').innerHTML=dynTable(rev);
   mkC('c-ipc','bar',iy,[{label:'IPC',data:iy.map(y=>id_[y]),backgroundColor:'#6b48c7',borderRadius:3}]);
