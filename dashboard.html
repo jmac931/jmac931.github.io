@@ -83,6 +83,7 @@ footer a{color:var(--blue);text-decoration:none;}
     <button onclick="tab('organizacoes',this)">Organizations</button>
     <button onclick="tab('avaliacoes',this)">Evaluations</button>
     <button onclick="tab('projects',this)">Projects</button>
+    <button onclick="tab('patents',this)">Patents</button>
     <button onclick="tab('awards',this)">Awards</button>
   </nav>
 
@@ -193,6 +194,13 @@ footer a{color:var(--blue);text-decoration:none;}
     <div id="proj-done-tbl"></div>
   </div>
 
+  <!-- PATENTS -->
+  <div id="tab-patents" class="tab">
+    <div class="metrics" id="m-pat"></div>
+    <div class="sec">All Patents <span class="sec-n" id="n-pat"></span></div>
+    <div id="pat-list"></div>
+  </div>
+
   <!-- AWARDS -->
   <div id="tab-awards" class="tab">
     <div class="metrics" id="m-aw"></div>
@@ -225,6 +233,7 @@ const GID = {
   Aulas:        '1034510459',
   Projetos:      '1344191889',
   Avaliações:    '402033740',
+  Patentes:      '1601770029',
 };
 
 let DATA={}, CH={};
@@ -380,6 +389,12 @@ const COL_EN = {
   // Visiting / Teaching
   'Departamento':'Department','Curso':'Course','Disciplina':'Subject',
   'Aula':'Class','Horas':'Hours',
+  // Patents
+  'Patente':'Patent','Inventores':'Inventors','Inventor':'Inventor',
+  'Requerente':'Applicant','Titular':'Holder','Estado':'Status',
+  'Nº Pedido':'Application No.','Numero Pedido':'Application No.',
+  'Nº Patente':'Patent No.','Numero Patente':'Patent No.',
+  'Data Pedido':'Filing Date','Data Concessão':'Grant Date','Data Concessao':'Grant Date',
 };
 
 function translateCol(k){ return COL_EN[k] || COL_EN[k.trim()] || k; }
@@ -414,7 +429,7 @@ function mkPie(id,labels,data,colors){
 }
 
 // ── RENDER ───────────────────────────────────────────────────────────
-function render(){ov();sup();rev();out();jur();org();av();proj();aw();}
+function render(){ov();sup();rev();out();jur();org();av();proj();pat();aw();}
 
 function ov(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[];
@@ -608,14 +623,42 @@ function proj(){
   const ecCol=keys.find(k=>k.toLowerCase().includes('emcurso')||k.toLowerCase().includes('curso'))||'EmCurso';
   const irCol=keys.find(k=>k.toLowerCase()==='ir')||'IR';
   const isActive=r=>{const v=String(r[ecCol]||'').trim().toUpperCase();return v==='S'||v==='SIM'||v==='YES'||v==='TRUE'||v==='1';};
+  const isIR=r=>{const v=String(r[irCol]||'').trim().toUpperCase();return v==='S'||v==='SIM'||v==='YES'||v==='TRUE'||v==='1';};
   const active=all.filter(isActive);
   const done=all.filter(r=>!isActive(r));
-  const excludeCols=[ecCol,'EmCurso','emcurso'];
+
+  // Excluir EmCurso + últimas 5 colunas
+  const last5=keys.slice(-5);
+  const excludeCols=[ecCol,'EmCurso','emcurso',...last5];
+
+  // Coluna do nome do projeto para ordenação alfabética (Acrónimo > Título > Nome > primeira)
+  const nameCol=keys.find(k=>/acron/i.test(k))
+              ||keys.find(k=>/t[ií]tulo|titulo/i.test(k))
+              ||keys.find(k=>/nome/i.test(k))
+              ||keys[0];
+  const sortFn=(a,b)=>{
+    const ai=isIR(a)?0:1, bi=isIR(b)?0:1;
+    if(ai!==bi) return ai-bi;
+    return String(a[nameCol]||'').localeCompare(String(b[nameCol]||''),'pt',{sensitivity:'base'});
+  };
+  const activeSorted=[...active].sort(sortFn);
+  const doneSorted  =[...done].sort(sortFn);
+
   $('m-proj').innerHTML=
     mc(all.length,'Total Projects')+mc(active.length,'Active')+mc(done.length,'Completed')+
-    mc(all.filter(r=>{const v=String(r[irCol]||'').trim().toUpperCase();return v==='S'||v==='SIM';}).length,'As PI','principal investigator');
-  setN('n-proj-a',active.length); $('proj-active-tbl').innerHTML=dynTable(active,excludeCols);
-  setN('n-proj-d',done.length);   $('proj-done-tbl').innerHTML=dynTable(done,excludeCols);
+    mc(all.filter(isIR).length,'As PI','principal investigator');
+  setN('n-proj-a',active.length); $('proj-active-tbl').innerHTML=dynTable(activeSorted,excludeCols);
+  setN('n-proj-d',done.length);   $('proj-done-tbl').innerHTML=dynTable(doneSorted,excludeCols);
+}
+
+function pat(){
+  const all=DATA.Patentes||[];
+  $('m-pat').innerHTML=mc(all.length,'Patents');
+  setN('n-pat',all.length);
+  // Ordenar por ano descendente, se houver coluna de ano
+  const yCol=all.length>0?yearCol(all[0]):null;
+  const sorted=yCol?[...all].sort((a,b)=>(extractYear(b[yCol])||0)-(extractYear(a[yCol])||0)):all;
+  $('pat-list').innerHTML=dynTable(sorted);
 }
 
 function aw(){
