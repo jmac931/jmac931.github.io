@@ -86,6 +86,18 @@ footer a{color:var(--blue);text-decoration:none;}
 .link-pill{font-size:12px;padding:7px 14px;border-radius:100px;border:.5px solid var(--bd);color:var(--blue);text-decoration:none;background:#fff;transition:all .15s;}
 .link-pill:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
 @media(prefers-color-scheme:dark){.link-pill{background:#2a2a28;}}
+
+/* publications list (profile) */
+.publist{display:flex;flex-direction:column;margin-bottom:1.2rem;}
+.pubitem{display:grid;grid-template-columns:54px 1fr auto;gap:14px;align-items:center;padding:11px 4px;border-bottom:.5px solid var(--bd);transition:background .15s;}
+.pubitem:last-child{border-bottom:none;}
+.pubitem:hover{background:rgba(26,79,138,0.03);}
+.pubitem .py{font-size:13px;font-weight:500;color:var(--blue);}
+.pubitem .pt{font-size:13px;color:var(--text);line-height:1.4;}
+.pubitem .pv{font-size:11.5px;color:var(--hint);margin-top:2px;}
+.pubitem .pg{font-size:11px;color:var(--blue);text-decoration:none;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 9px;white-space:nowrap;transition:all .15s;}
+.pubitem .pg:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+@media(max-width:640px){.pubitem{grid-template-columns:40px 1fr;}.pubitem .pg{grid-column:2;justify-self:start;margin-top:5px;}}
 </style>
 </head>
 <body>
@@ -164,6 +176,10 @@ footer a{color:var(--blue);text-decoration:none;}
         </div>
       </div>
     </div>
+
+    <div class="sec">Selected Publications <span class="sec-n" id="pub-n">recent peer-reviewed work</span></div>
+    <div class="publist" id="pub-list"></div>
+    <div style="font-size:12px"><a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRY_FZah8kt4drhmU1JwaAeSIjzmUKSQLHBjAldyVOkCDYUd8NtENkcIq5q6jO0rGduvlB3J9e4YB3F/pubhtml" target="_blank" style="color:var(--blue);text-decoration:none">View the complete list of publications →</a></div>
   </div>
 
   <!-- OVERVIEW -->
@@ -313,6 +329,10 @@ footer a{color:var(--blue);text-decoration:none;}
 const PUB  = '2PACX-1vSctRW4Esw6kMfqG58Hs1w2BvUl6nbWQJYU0qzkc_OEBOuhFyBUnlUNVg9nZdkESBMfyIMIge75q1NK';
 const BASE = `https://docs.google.com/spreadsheets/d/e/${PUB}`;
 
+// Folha separada (publicações) — ID de publicação diferente
+const PUB_PUBS  = '2PACX-1vRY_FZah8kt4drhmU1JwaAeSIjzmUKSQLHBjAldyVOkCDYUd8NtENkcIq5q6jO0rGduvlB3J9e4YB3F';
+const BASE_PUBS = `https://docs.google.com/spreadsheets/d/e/${PUB_PUBS}`;
+
 const GID = {
   UC:           '105312032',
   Revistas:     '1481340375',
@@ -387,6 +407,13 @@ function csvRow(line){
 async function loadAll(){
   const entries=await Promise.all(Object.keys(GID).map(async n=>[n,await fetchCsv(n).catch(e=>{console.error(n,e);return [];})]));
   entries.forEach(([n,d])=>DATA[n]=d);
+  // Folha separada de publicações (primeira aba)
+  DATA.Publicacoes = await fetchCsvUrl(`${BASE_PUBS}/pub?output=csv&gid=649339136&single=true`).catch(e=>{console.error('Publicacoes',e);return [];});
+}
+async function fetchCsvUrl(url){
+  const r=await fetch(url);
+  if(!r.ok){console.warn('Pubs HTTP',r.status);return [];}
+  return parseCsv(await r.text());
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────
@@ -534,14 +561,52 @@ function mkPie(id,labels,data,colors){
 // ── RENDER ───────────────────────────────────────────────────────────
 function profile(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[],rev=DATA.Revistas||[];
-  const uc=(DATA.UC||[]).length;
+  const ucN=(DATA.UC||[]).length;
+  const pubs=DATA.Publicacoes||[];
   $('m-profile').innerHTML=
-    mc(uc||'—','Curricular Units')+
+    mc(pubs.length||'400+','Publications')+
+    mc(ucN||'—','Curricular Units')+
     mc(phd.length||'—','Completed PhDs')+
     mc(msc.length||'—','Completed MScs')+
-    mc(rev.length||'—','Journal Reviews')+
     mc((DATA.Projetos||[]).length||'—','Projects')+
     mc((DATA.Prémios||[]).length||'—','Awards');
+  renderPubs(pubs);
+}
+
+function renderPubs(pubs){
+  const box=$('pub-list'); if(!box) return;
+  if(!pubs||pubs.length===0){
+    box.innerHTML='<p style="font-size:13px;color:var(--hint);padding:8px 0">No publications loaded. Confirma que a folha está publicada na Web (F12 para detalhes).</p>';
+    return;
+  }
+  const keys=Object.keys(pubs[0]);
+  const find=(...h)=>{for(const x of h){const k=keys.find(k=>k.toLowerCase().includes(x));if(k)return k;}return null;};
+  const titleCol = find('título','titulo','title','publicaç','publicacao','referência','referencia','citation','reference') || keys[0];
+  const yearCol_ = find('ano','year','data');
+  const venueCol = find('revista','journal','conferência','conferencia','venue','publicado','source','editora','publisher');
+  const linkCol  = find('doi','link','url','hyperlink');
+
+  // ordenar por ano desc se houver
+  const list=[...pubs];
+  if(yearCol_) list.sort((a,b)=>(extractYear(b[yearCol_])||0)-(extractYear(a[yearCol_])||0));
+
+  setN('pub-n', pubs.length); // mostra (n)
+  $('pub-n').textContent = `${pubs.length} records`;
+
+  box.innerHTML=list.map(r=>{
+    const title=(r[titleCol]||'—').trim();
+    const year=yearCol_?(extractYear(r[yearCol_])||(r[yearCol_]||'').trim()):'';
+    const venue=venueCol?(r[venueCol]||'').trim():'';
+    let link=linkCol?(r[linkCol]||'').trim():'';
+    if(link && !/^https?:\/\//i.test(link)){
+      link = /^10\./.test(link) ? 'https://doi.org/'+link : '';
+    }
+    return `<div class="pubitem">
+      <div class="py">${year||'—'}</div>
+      <div><div class="pt">${title}</div>${venue?`<div class="pv">${venue}</div>`:''}</div>
+      ${link?`<a class="pg" href="${link}" target="_blank">Link ↗</a>`:'<span></span>'}
+    </div>`;
+  }).join('');
 }
 
 function render(){profile();ov();uc();sup();rev();out();jur();org();av();proj();pat();aw();}
