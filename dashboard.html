@@ -76,6 +76,7 @@ footer a{color:var(--blue);text-decoration:none;}
 <main id="app" style="display:none">
   <nav>
     <button class="active" onclick="tab('overview',this)">Overview</button>
+    <button onclick="tab('teaching',this)">Curricular Units</button>
     <button onclick="tab('supervision',this)">Supervision</button>
     <button onclick="tab('reviews',this)">Reviews</button>
     <button onclick="tab('outreach',this)">Outreach</button>
@@ -104,6 +105,23 @@ footer a{color:var(--blue);text-decoration:none;}
     <div class="sec">Talks and Keynotes by Year</div>
     <div class="legend"><span><b style="background:#D85A30"></b>Talks</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
     <div class="chart-wrap" style="height:200px"><canvas id="c-ov-talks"></canvas></div>
+  </div>
+
+  <!-- CURRICULAR UNITS -->
+  <div id="tab-teaching" class="tab">
+    <div class="metrics" id="m-uc"></div>
+    <div class="grid2">
+      <div>
+        <div class="sec">Units by Cycle / Programme</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c-uc-cycle"></canvas></div>
+      </div>
+      <div>
+        <div class="sec">Units by Year</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c-uc-year"></canvas></div>
+      </div>
+    </div>
+    <div class="sec">All Curricular Units <span class="sec-n" id="n-uc"></span></div>
+    <div id="uc-tbl"></div>
   </div>
 
   <!-- SUPERVISION -->
@@ -218,6 +236,7 @@ const PUB  = '2PACX-1vSctRW4Esw6kMfqG58Hs1w2BvUl6nbWQJYU0qzkc_OEBOuhFyBUnlUNVg9n
 const BASE = `https://docs.google.com/spreadsheets/d/e/${PUB}`;
 
 const GID = {
+  UC:           '105312032',
   Revistas:     '1481340375',
   IPC:          '1772665951',
   AlunosPhD:    '1546740421',
@@ -389,6 +408,11 @@ const COL_EN = {
   // Visiting / Teaching
   'Departamento':'Department','Curso':'Course','Disciplina':'Subject',
   'Aula':'Class','Horas':'Hours',
+  // Curricular Units
+  'Unidade Curricular':'Curricular Unit','Unidade':'Curricular Unit',
+  'Ciclo':'Cycle','Grau':'Degree','Regime':'Mode','Período':'Period','Periodo':'Period',
+  'Ano Letivo':'Academic Year','Ano Lectivo':'Academic Year','Semestre':'Semester',
+  'ECTS':'ECTS','Créditos':'Credits','Creditos':'Credits','Língua':'Language','Lingua':'Language',
   // Patents
   'Patente':'Patent','Inventores':'Inventors','Inventor':'Inventor',
   'Requerente':'Applicant','Titular':'Holder','Estado':'Status',
@@ -429,7 +453,7 @@ function mkPie(id,labels,data,colors){
 }
 
 // ── RENDER ───────────────────────────────────────────────────────────
-function render(){ov();sup();rev();out();jur();org();av();proj();pat();aw();}
+function render(){ov();uc();sup();rev();out();jur();org();av();proj();pat();aw();}
 
 function ov(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[];
@@ -453,6 +477,50 @@ function ov(){
   mkC('c-ov-talks','bar',ty,[
     {label:'Talks',data:ty.map(y=>py[y]||0),backgroundColor:'#D85A30',borderRadius:3},
     {label:'Keynotes', data:ty.map(y=>ky2[y]||0),backgroundColor:'#BA7517',borderRadius:3}],true);
+}
+
+function uc(){
+  const all=DATA.UC||[];
+  const keys=all.length>0?Object.keys(all[0]):[];
+
+  // Detetar colunas-chave por nome (tolerante a variações)
+  const find=(...hints)=>{for(const h of hints){const k=keys.find(k=>k.toLowerCase().includes(h));if(k)return k;}return null;};
+  const nameCol  = find('unidade','disciplina','curricular','nome','designa') || keys[0];
+  const cycleCol = find('ciclo','grau','curso','programa','licen','mestrado','doutor');
+  const yearCol_ = find('ano letivo','ano lectivo','anolet','ano');
+  const ectsCol  = find('ects','créd','cred');
+
+  // Métricas
+  const distinctYears=new Set(all.map(r=>extractYear(r[yearCol_])).filter(Boolean));
+  $('m-uc').innerHTML=
+    mc(all.length,'Curricular Units')+
+    (cycleCol?mc(new Set(all.map(r=>(r[cycleCol]||'').trim()).filter(Boolean)).size,'Cycles / Programmes'):'')+
+    (yearCol_&&distinctYears.size?mc(distinctYears.size,'Academic Years'):'')+
+    (ectsCol?mc(all.reduce((s,r)=>s+(parseFloat(String(r[ectsCol]).replace(',','.'))||0),0)||'—','Total ECTS'):'');
+
+  // Gráfico 1 — por ciclo/programa
+  if(cycleCol){
+    const byc=byVal(all,cycleCol);
+    const ck=Object.keys(byc).sort((a,b)=>byc[b]-byc[a]);
+    if(ck.length>0) mkPie('c-uc-cycle',ck,ck.map(k=>byc[k]),PALETTE);
+  }
+  // Gráfico 2 — por ano letivo
+  if(yearCol_){
+    const yc=byYRobust(all,yearCol_),ys=sortY(yc);
+    if(ys.length>0) mkC('c-uc-year','bar',ys,[{label:'Units',data:ys.map(y=>yc[y]||0),backgroundColor:'#1a4f8a',borderRadius:3}]);
+  }
+
+  // Tabela — ordenar por ano letivo desc (se existir), senão alfabético pelo nome
+  const sorted=yearCol_
+    ? [...all].sort((a,b)=>(extractYear(b[yearCol_])||0)-(extractYear(a[yearCol_])||0))
+    : [...all].sort((a,b)=>String(a[nameCol]||'').localeCompare(String(b[nameCol]||''),'pt',{sensitivity:'base'}));
+  setN('n-uc',all.length);
+  if(all.length===0){
+    $('uc-tbl').innerHTML='<p style="font-size:13px;color:var(--hint)">No data. GID: 105312032. Confirma que a aba UC está publicada na Web (F12 para detalhes).</p>';
+    console.warn('UC vazia. DATA.UC =',DATA.UC);
+  } else {
+    $('uc-tbl').innerHTML=dynTable(sorted);
+  }
 }
 
 function sup(){
