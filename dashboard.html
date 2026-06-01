@@ -112,7 +112,7 @@ footer a{color:var(--blue);text-decoration:none;}
     <div class="metrics" id="m-uc"></div>
     <div class="grid2">
       <div>
-        <div class="sec">Units by Cycle / Programme</div>
+        <div class="sec">Units by Course</div>
         <div class="chart-wrap" style="height:240px"><canvas id="c-uc-cycle"></canvas></div>
       </div>
       <div>
@@ -486,7 +486,7 @@ function uc(){
   // Detetar colunas-chave por nome (tolerante a variações)
   const find=(...hints)=>{for(const h of hints){const k=keys.find(k=>k.toLowerCase().includes(h));if(k)return k;}return null;};
   const nameCol  = find('unidade','disciplina','curricular','nome','designa') || keys[0];
-  const cycleCol = find('ciclo','grau','curso','programa','licen','mestrado','doutor');
+  const courseCol= find('curso') || find('ciclo','grau','programa','licen','mestrado','doutor');
   const yearCol_ = find('ano letivo','ano lectivo','anolet','ano');
   const ectsCol  = find('ects','créd','cred');
 
@@ -494,13 +494,13 @@ function uc(){
   const distinctYears=new Set(all.map(r=>extractYear(r[yearCol_])).filter(Boolean));
   $('m-uc').innerHTML=
     mc(all.length,'Curricular Units')+
-    (cycleCol?mc(new Set(all.map(r=>(r[cycleCol]||'').trim()).filter(Boolean)).size,'Cycles / Programmes'):'')+
+    (courseCol?mc(new Set(all.map(r=>(r[courseCol]||'').trim()).filter(Boolean)).size,'Courses'):'')+
     (yearCol_&&distinctYears.size?mc(distinctYears.size,'Academic Years'):'')+
     (ectsCol?mc(all.reduce((s,r)=>s+(parseFloat(String(r[ectsCol]).replace(',','.'))||0),0)||'—','Total ECTS'):'');
 
-  // Gráfico 1 — por ciclo/programa
-  if(cycleCol){
-    const byc=byVal(all,cycleCol);
+  // Gráfico 1 — por Curso
+  if(courseCol){
+    const byc=byVal(all,courseCol);
     const ck=Object.keys(byc).sort((a,b)=>byc[b]-byc[a]);
     if(ck.length>0) mkPie('c-uc-cycle',ck,ck.map(k=>byc[k]),PALETTE);
   }
