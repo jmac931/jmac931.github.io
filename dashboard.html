@@ -486,14 +486,14 @@ function uc(){
 
   // Detetar colunas-chave por nome (tolerante a variações)
   const find=(...hints)=>{for(const h of hints){const k=keys.find(k=>k.toLowerCase().includes(h));if(k)return k;}return null;};
+  const exact=(...names)=>{for(const n of names){const k=keys.find(k=>k.trim().toLowerCase()===n.toLowerCase());if(k)return k;}return null;};
   const nameCol  = find('unidade','disciplina','curricular','nome','designa') || keys[0];
-  const courseCol= find('curso') || find('ciclo','grau','programa','licen','mestrado','doutor');
+  const courseCol= exact('course','curso') || find('course','curso') || find('ciclo','grau','programa','licen','mestrado','doutor');
   const yearCol_ = find('ano letivo','ano lectivo','anolet','ano');
   const ectsCol  = find('ects','créd','cred');
-  const enrolCol = find('inscrit','alunos','estudantes','matricul','nº alunos','n alunos','numero de alunos','número de alunos');
+  const enrolCol = exact('enrolled','inscritos','matriculados') || find('enrol','inscrit','alunos','estudantes','matricul','nº alunos','n alunos','numero de alunos','número de alunos');
 
   // Métricas
-  const distinctYears=new Set(all.map(r=>extractYear(r[yearCol_])).filter(Boolean));
   const totalEnrol=enrolCol?all.reduce((s,r)=>s+(parseInt(String(r[enrolCol]).replace(/\D/g,''))||0),0):0;
   $('m-uc').innerHTML=
     mc(all.length,'Curricular Units')+
@@ -501,18 +501,22 @@ function uc(){
     (enrolCol?mc(totalEnrol||'—','Total Enrolled'):'')+
     (ectsCol?mc(all.reduce((s,r)=>s+(parseFloat(String(r[ectsCol]).replace(',','.'))||0),0)||'—','Total ECTS'):'');
 
-  // Gráfico 1 — por Curso
+  // Gráfico 1 — por Curso (coluna "Course")
   if(courseCol){
     const byc=byVal(all,courseCol);
     const ck=Object.keys(byc).sort((a,b)=>byc[b]-byc[a]);
     if(ck.length>0) mkPie('c-uc-cycle',ck,ck.map(k=>byc[k]),PALETTE);
   }
-  // Gráfico 2 — número de inscritos por unidade curricular
+  // Gráfico 2 — inscritos somados por nome de unidade curricular
   if(enrolCol){
-    const rowsE=all
-      .map(r=>({name:(r[nameCol]||'—').trim(),n:parseInt(String(r[enrolCol]).replace(/\D/g,''))||0}))
-      .filter(r=>r.n>0)
-      .sort((a,b)=>b.n-a.n);
+    const agg={};
+    all.forEach(r=>{
+      const name=(r[nameCol]||'—').trim();
+      const n=parseInt(String(r[enrolCol]).replace(/\D/g,''))||0;
+      if(!name||n===0) return;
+      agg[name]=(agg[name]||0)+n;
+    });
+    const rowsE=Object.entries(agg).map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n);
     if(rowsE.length>0){
       const labels=rowsE.map(r=>r.name.length>34?r.name.slice(0,32)+'…':r.name);
       mkC('c-uc-year','bar',labels,[{label:'Enrolled',data:rowsE.map(r=>r.n),backgroundColor:'#1D9E75',borderRadius:3}]);
