@@ -107,6 +107,7 @@ footer a{color:var(--blue);text-decoration:none;}
   <nav>
     <button class="active" onclick="tab('profile',this)">Profile</button>
     <button onclick="tab('overview',this)">Overview</button>
+    <button onclick="tab('publications',this)">Publications</button>
     <button onclick="tab('teaching',this)">Curricular Units</button>
     <button onclick="tab('supervision',this)">Supervision</button>
     <button onclick="tab('reviews',this)">Reviews</button>
@@ -176,10 +177,6 @@ footer a{color:var(--blue);text-decoration:none;}
         </div>
       </div>
     </div>
-
-    <div class="sec">Selected Publications <span class="sec-n" id="pub-n">recent peer-reviewed work</span></div>
-    <div class="publist" id="pub-list"></div>
-    <div style="font-size:12px"><a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRY_FZah8kt4drhmU1JwaAeSIjzmUKSQLHBjAldyVOkCDYUd8NtENkcIq5q6jO0rGduvlB3J9e4YB3F/pubhtml" target="_blank" style="color:var(--blue);text-decoration:none">View the complete list of publications →</a></div>
   </div>
 
   <!-- OVERVIEW -->
@@ -199,6 +196,24 @@ footer a{color:var(--blue);text-decoration:none;}
     <div class="sec">Talks and Keynotes by Year</div>
     <div class="legend"><span><b style="background:#D85A30"></b>Talks</span><span><b style="background:#BA7517"></b>Keynotes</span></div>
     <div class="chart-wrap" style="height:200px"><canvas id="c-ov-talks"></canvas></div>
+  </div>
+
+  <!-- PUBLICATIONS -->
+  <div id="tab-publications" class="tab">
+    <div class="metrics" id="m-pub"></div>
+    <div class="grid2">
+      <div>
+        <div class="sec">Publications by Year</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c-pub-year"></canvas></div>
+      </div>
+      <div>
+        <div class="sec">Publications by Type</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c-pub-type"></canvas></div>
+      </div>
+    </div>
+    <div class="sec">All Publications <span class="sec-n" id="pub-n"></span></div>
+    <div class="publist" id="pub-list"></div>
+    <div style="font-size:12px;margin-top:.4rem"><a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRY_FZah8kt4drhmU1JwaAeSIjzmUKSQLHBjAldyVOkCDYUd8NtENkcIq5q6jO0rGduvlB3J9e4YB3F/pubhtml" target="_blank" style="color:var(--blue);text-decoration:none">Open the publications spreadsheet →</a></div>
   </div>
 
   <!-- CURRICULAR UNITS -->
@@ -560,7 +575,7 @@ function mkPie(id,labels,data,colors){
 
 // ── RENDER ───────────────────────────────────────────────────────────
 function profile(){
-  const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[],rev=DATA.Revistas||[];
+  const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[];
   const ucN=(DATA.UC||[]).length;
   const pubs=DATA.Publicacoes||[];
   $('m-profile').innerHTML=
@@ -570,28 +585,65 @@ function profile(){
     mc(msc.length||'—','Completed MScs')+
     mc((DATA.Projetos||[]).length||'—','Projects')+
     mc((DATA.Prémios||[]).length||'—','Awards');
-  renderPubs(pubs);
 }
 
-function renderPubs(pubs){
+function pub(){
+  const pubs=DATA.Publicacoes||[];
+  const keys=pubs.length>0?Object.keys(pubs[0]):[];
+  const find=(...h)=>{for(const x of h){const k=keys.find(k=>k.toLowerCase().includes(x));if(k)return k;}return null;};
+  const titleCol = find('título','titulo','title','publicaç','publicacao','referência','referencia','citation','reference') || keys[0];
+  const yearCol_ = find('ano','year','data');
+  const venueCol = find('revista','journal','conferência','conferencia','venue','publicado','source','editora','publisher');
+  const typeCol  = find('tipo','type','categoria','category','natureza');
+  const linkCol  = find('doi','link','url','hyperlink');
+
+  // KPIs
+  const years=pubs.map(r=>extractYear(r[yearCol_])).filter(Boolean);
+  const yc=byYRobust(pubs,yearCol_), ys=sortY(yc);
+  const last5=years.filter(y=>y>=(new Date().getFullYear()-4)).length;
+  const peakYear=ys.length? ys.reduce((a,b)=>yc[b]>=yc[a]?b:a) : null;
+  const withDoi=linkCol? pubs.filter(r=>String(r[linkCol]||'').trim()).length : 0;
+  $('m-pub').innerHTML=
+    mc(pubs.length||'—','Total Publications')+
+    (years.length?mc(last5,'Last 5 Years'):'')+
+    (years.length?mc(Math.min(...years)+'–'+Math.max(...years),'Span',`${new Set(years).size} active years`):'')+
+    (peakYear?mc(yc[peakYear],'Peak Year',String(peakYear)):'')+
+    (typeCol?mc(new Set(pubs.map(r=>(r[typeCol]||'').trim()).filter(Boolean)).size,'Types'):'')+
+    (linkCol?mc(withDoi,'With DOI / Link'):'');
+
+  // Gráfico — por ano
+  if(ys.length>0) mkC('c-pub-year','bar',ys,[{label:'Publications',data:ys.map(y=>yc[y]||0),backgroundColor:'#1a4f8a',borderRadius:3}]);
+
+  // Gráfico — por tipo (ou por revista/venue se não houver tipo)
+  const catCol = typeCol || venueCol;
+  if(catCol){
+    const bc=byVal(pubs,catCol);
+    let ck=Object.keys(bc).sort((a,b)=>bc[b]-bc[a]);
+    // agrupar cauda longa em "Other" se houver muitas categorias
+    if(ck.length>8){
+      const top=ck.slice(0,7), rest=ck.slice(7);
+      const otherSum=rest.reduce((s,k)=>s+bc[k],0);
+      const data=top.map(k=>bc[k]).concat(otherSum);
+      mkPie('c-pub-type',top.concat('Other'),data,PALETTE);
+    } else {
+      mkPie('c-pub-type',ck,ck.map(k=>bc[k]),PALETTE);
+    }
+  }
+
+  // Lista
+  renderPubs(pubs,{titleCol,yearCol_,venueCol,linkCol});
+}
+
+function renderPubs(pubs,cols){
   const box=$('pub-list'); if(!box) return;
   if(!pubs||pubs.length===0){
     box.innerHTML='<p style="font-size:13px;color:var(--hint);padding:8px 0">No publications loaded. Confirma que a folha está publicada na Web (F12 para detalhes).</p>';
     return;
   }
-  const keys=Object.keys(pubs[0]);
-  const find=(...h)=>{for(const x of h){const k=keys.find(k=>k.toLowerCase().includes(x));if(k)return k;}return null;};
-  const titleCol = find('título','titulo','title','publicaç','publicacao','referência','referencia','citation','reference') || keys[0];
-  const yearCol_ = find('ano','year','data');
-  const venueCol = find('revista','journal','conferência','conferencia','venue','publicado','source','editora','publisher');
-  const linkCol  = find('doi','link','url','hyperlink');
-
-  // ordenar por ano desc se houver
+  const {titleCol,yearCol_,venueCol,linkCol}=cols;
   const list=[...pubs];
   if(yearCol_) list.sort((a,b)=>(extractYear(b[yearCol_])||0)-(extractYear(a[yearCol_])||0));
-
-  setN('pub-n', pubs.length); // mostra (n)
-  $('pub-n').textContent = `${pubs.length} records`;
+  $('pub-n').textContent = `(${pubs.length})`;
 
   box.innerHTML=list.map(r=>{
     const title=(r[titleCol]||'—').trim();
@@ -609,7 +661,7 @@ function renderPubs(pubs){
   }).join('');
 }
 
-function render(){profile();ov();uc();sup();rev();out();jur();org();av();proj();pat();aw();}
+function render(){profile();ov();pub();uc();sup();rev();out();jur();org();av();proj();pat();aw();}
 
 function ov(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[];
