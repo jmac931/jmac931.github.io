@@ -116,7 +116,7 @@ footer a{color:var(--blue);text-decoration:none;}
         <div class="chart-wrap" style="height:240px"><canvas id="c-uc-cycle"></canvas></div>
       </div>
       <div>
-        <div class="sec">Units by Year</div>
+        <div class="sec">Enrolled Students by Unit</div>
         <div class="chart-wrap" style="height:240px"><canvas id="c-uc-year"></canvas></div>
       </div>
     </div>
@@ -413,6 +413,7 @@ const COL_EN = {
   'Ciclo':'Cycle','Grau':'Degree','Regime':'Mode','Período':'Period','Periodo':'Period',
   'Ano Letivo':'Academic Year','Ano Lectivo':'Academic Year','Semestre':'Semester',
   'ECTS':'ECTS','Créditos':'Credits','Creditos':'Credits','Língua':'Language','Lingua':'Language',
+  'Inscritos':'Enrolled','Nº Inscritos':'Enrolled','Nº de Inscritos':'Enrolled','Alunos':'Students','Nº Alunos':'Students','Matriculados':'Enrolled',
   // Patents
   'Patente':'Patent','Inventores':'Inventors','Inventor':'Inventor',
   'Requerente':'Applicant','Titular':'Holder','Estado':'Status',
@@ -489,13 +490,15 @@ function uc(){
   const courseCol= find('curso') || find('ciclo','grau','programa','licen','mestrado','doutor');
   const yearCol_ = find('ano letivo','ano lectivo','anolet','ano');
   const ectsCol  = find('ects','créd','cred');
+  const enrolCol = find('inscrit','alunos','estudantes','matricul','nº alunos','n alunos','numero de alunos','número de alunos');
 
   // Métricas
   const distinctYears=new Set(all.map(r=>extractYear(r[yearCol_])).filter(Boolean));
+  const totalEnrol=enrolCol?all.reduce((s,r)=>s+(parseInt(String(r[enrolCol]).replace(/\D/g,''))||0),0):0;
   $('m-uc').innerHTML=
     mc(all.length,'Curricular Units')+
     (courseCol?mc(new Set(all.map(r=>(r[courseCol]||'').trim()).filter(Boolean)).size,'Courses'):'')+
-    (yearCol_&&distinctYears.size?mc(distinctYears.size,'Academic Years'):'')+
+    (enrolCol?mc(totalEnrol||'—','Total Enrolled'):'')+
     (ectsCol?mc(all.reduce((s,r)=>s+(parseFloat(String(r[ectsCol]).replace(',','.'))||0),0)||'—','Total ECTS'):'');
 
   // Gráfico 1 — por Curso
@@ -504,10 +507,16 @@ function uc(){
     const ck=Object.keys(byc).sort((a,b)=>byc[b]-byc[a]);
     if(ck.length>0) mkPie('c-uc-cycle',ck,ck.map(k=>byc[k]),PALETTE);
   }
-  // Gráfico 2 — por ano letivo
-  if(yearCol_){
-    const yc=byYRobust(all,yearCol_),ys=sortY(yc);
-    if(ys.length>0) mkC('c-uc-year','bar',ys,[{label:'Units',data:ys.map(y=>yc[y]||0),backgroundColor:'#1a4f8a',borderRadius:3}]);
+  // Gráfico 2 — número de inscritos por unidade curricular
+  if(enrolCol){
+    const rowsE=all
+      .map(r=>({name:(r[nameCol]||'—').trim(),n:parseInt(String(r[enrolCol]).replace(/\D/g,''))||0}))
+      .filter(r=>r.n>0)
+      .sort((a,b)=>b.n-a.n);
+    if(rowsE.length>0){
+      const labels=rowsE.map(r=>r.name.length>34?r.name.slice(0,32)+'…':r.name);
+      mkC('c-uc-year','bar',labels,[{label:'Enrolled',data:rowsE.map(r=>r.n),backgroundColor:'#1D9E75',borderRadius:3}]);
+    }
   }
 
   // Tabela — ordenar por ano letivo desc (se existir), senão alfabético pelo nome
