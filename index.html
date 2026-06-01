@@ -384,7 +384,7 @@ footer a{color:var(--blue);text-decoration:none;}
   <div class="sec">Travel Map <span class="sec-n" id="n-map"></span></div>
   <div class="map-prog" id="map-prog" style="display:none"><span id="map-prog-t">Geocoding locations…</span><span class="bar"><i id="map-prog-b"></i></span></div>
   <div id="map"></div>
-  <div style="font-size:11px;color:var(--hint);margin-top:.4rem">Coordinates from OpenStreetMap · Nominatim (cached in your browser). Click a marker to view the photo.</div>
+  <div style="font-size:11px;color:var(--hint);margin-top:.4rem">Map data © OpenStreetMap. Click a marker to view the photo.</div>
 </div>
 <div class="lb" id="lb" onclick="if(event.target.id==='lb')closeLb()">
   <button class="lb-x" onclick="closeLb()">&times;</button>
@@ -1025,6 +1025,8 @@ function gallery(){
     loc:    find('location','local'),
     country:find('country','país','pais'),
     year:   find('year','ano'),
+    lat:    find('lat','latitude'),
+    lng:    find('long','lng','lon','longitude'),
     thumb:  find('thumbnail url','thumbnail','thumb','miniatura'),
     full:   find('full image url','full','image url','imagem','url','link'),
   };
@@ -1085,82 +1087,60 @@ function closeLb(){ $('lb').classList.remove('open'); document.removeEventListen
 function lbKey(e){ if(e.key==='Escape')closeLb(); else if(e.key==='ArrowRight')lbStep(1); else if(e.key==='ArrowLeft')lbStep(-1); }
 
 // ── MAP ──────────────────────────────────────────────────────────────
-let MAP=null, MAP_DONE=false, MAP_RUNNING=false;
-const GEO_CACHE={};
+let MAP=null, MAP_DONE=false;
+function parseLL(v){const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:n;}
 function mapMeta(){
   const all=DATA.Gallery||[];
   const c=GAL_COLS||{};
-  const locCol = c.loc || (all.length? Object.keys(all[0]).find(k=>k.toLowerCase().includes('location')||k.toLowerCase().includes('local')) : null);
-  const places=new Set();
-  all.forEach(r=>{ const q=geoQuery(r,c,locCol); if(q)places.add(q); });
+  const withCoords=all.filter(r=>c.lat&&c.lng&&parseLL(r[c.lat])!==null&&parseLL(r[c.lng])!==null);
+  const countries=c.country?new Set(all.map(r=>(r[c.country]||'').trim()).filter(Boolean)):new Set();
   $('m-map').innerHTML=
     mc(all.length||'—','Photos')+
-    mc(places.size||'—','Distinct places')+
-    (c.country?mc(new Set(all.map(r=>(r[c.country]||'').trim()).filter(Boolean)).size,'Countries'):'');
+    mc(withCoords.length||'—','Mapped')+
+    (countries.size?mc(countries.size,'Countries'):'');
   setN('n-map',all.length);
-  return {all,c,locCol};
+  return {all,c,withCoords};
 }
-function geoQuery(r,c,locCol){
-  const loc=locCol?(r[locCol]||'').trim():'';
-  const country=c.country?(r[c.country]||'').trim():'';
-  if(loc&&country) return loc+', '+country;
-  return loc||country||(c.cap?(r[c.cap]||'').split(',')[0].trim():'');
-}
-async function geocode(q){
-  if(GEO_CACHE[q]!==undefined) return GEO_CACHE[q];
-  try{
-    const u='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
-    const r=await fetch(u,{headers:{'Accept':'application/json'}});
-    const j=await r.json();
-    GEO_CACHE[q]= j&&j[0] ? [parseFloat(j[0].lat),parseFloat(j[0].lon)] : null;
-  }catch(e){ GEO_CACHE[q]=null; }
-  return GEO_CACHE[q];
-}
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-async function initMap(){
-  if(MAP_RUNNING||MAP_DONE) return;
-  MAP_RUNNING=true;
-  const {all,c,locCol}=mapMeta();
-  if(!all.length){ MAP_RUNNING=false; return; }
+function initMap(){
+  if(MAP_DONE) return;
+  const {all,c,withCoords}=mapMeta();
+  const prog=$('map-prog');
+  if(!c.lat||!c.lng){
+    if(prog){prog.style.display='flex';$('map-prog-t').textContent='No Lat/Long columns found in the Gallery sheet.';$('map-prog-b').parentElement.style.display='none';}
+    return;
+  }
+  if(!withCoords.length){ MAP_DONE=true; return; }
 
   MAP=L.map('map',{scrollWheelZoom:true,worldCopyJump:true}).setView([25,10],2);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:18, attribution:'© OpenStreetMap'
-  }).addTo(MAP);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(MAP);
 
-  // agrupar fotos por local distinto
-  const groups={};
-  all.forEach((r,i)=>{ const q=geoQuery(r,c,locCol); if(!q)return; (groups[q]=groups[q]||[]).push({r,i}); });
-  const queries=Object.keys(groups);
-  const prog=$('map-prog'), bar=$('map-prog-b'), pt=$('map-prog-t');
-  prog.style.display='flex';
-  const bounds=[];
-  let done=0;
+  // agrupar fotos que partilham a mesma coordenada
+  const groups={}; const bounds=[];
+  all.forEach((r,i)=>{
+    const la=parseLL(r[c.lat]), lo=parseLL(r[c.lng]);
+    if(la===null||lo===null) return;
+    const key=la.toFixed(4)+','+lo.toFixed(4);
+    (groups[key]=groups[key]||{ll:[la,lo],items:[]}).items.push({r,i});
+  });
 
-  for(const q of queries){
-    const ll=await geocode(q);
-    done++; bar.style.width=Math.round(done/queries.length*100)+'%';
-    pt.textContent=`Geocoding locations… ${done}/${queries.length}`;
-    if(ll){
-      bounds.push(ll);
-      const items=groups[q];
-      // pequeno offset se vários no mesmo ponto? mantemos um marcador com galeria
-      const first=items[0].r;
-      const cap=(first[c.cap]||q).trim();
-      const yr=c.year?(first[c.year]||'').trim():'';
-      const thumb=(first[c.thumb]||first[c.full]||'').trim();
-      const full=(first[c.full]||first[c.thumb]||'').trim();
-      const idxInView=items.map(it=>it.i);
-      const m=L.marker(ll).addTo(MAP);
-      const extra=items.length>1?`<div class="my">+${items.length-1} more photo(s) here</div>`:'';
-      m.bindPopup(`<div class="map-pop"><img src="${thumb}" onclick="openLbGlobal(${idxInView[0]})"><div class="mc">${cap}</div>${yr?`<div class="my">${yr}</div>`:''}${extra}</div>`);
-    }
-    if(done<queries.length) await sleep(1100); // respeitar limite Nominatim
-  }
+  Object.values(groups).forEach(g=>{
+    bounds.push(g.ll);
+    const items=g.items.sort((a,b)=>{
+      const ya=c.year?parseInt(a.r[c.year])||0:0, yb=c.year?parseInt(b.r[c.year])||0:0; return yb-ya;
+    });
+    const first=items[0].r;
+    const cap=(first[c.cap]||'').trim();
+    const yr=c.year?(first[c.year]||'').trim():'';
+    const thumb=(first[c.thumb]||first[c.full]||'').trim();
+    const m=L.marker(g.ll).addTo(MAP);
+    const extra=items.length>1?`<div class="my">+${items.length-1} more photo(s) here</div>`:'';
+    m.bindPopup(`<div class="map-pop"><img src="${thumb}" onclick="openLbGlobal(${items[0].i})"><div class="mc">${cap}</div>${yr?`<div class="my">${yr}</div>`:''}${extra}</div>`);
+  });
+
   if(bounds.length) MAP.fitBounds(bounds,{padding:[30,30]});
-  prog.style.display='none';
-  MAP_DONE=true; MAP_RUNNING=false;
+  if(prog) prog.style.display='none';
+  MAP_DONE=true;
 }
 // abrir lightbox da galeria a partir do mapa (usa o índice na lista completa)
 function openLbGlobal(globalIdx){
@@ -1174,7 +1154,7 @@ function tab(id,btn){
   $('tab-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
   if(id==='map'){
-    if(!MAP_DONE&&!MAP_RUNNING) initMap();
+    if(!MAP_DONE) initMap();
     else if(MAP) setTimeout(()=>MAP.invalidateSize(),60);
   }
 }
