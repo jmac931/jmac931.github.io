@@ -1030,19 +1030,27 @@ function gallery(){
     thumb:  find('thumbnail url','thumbnail','thumb','miniatura'),
     full:   find('full image url','full','image url','imagem','url','link'),
   };
-  GAL=all;
+  // descartar entradas sem foto e remover fotos repetidas (mesma imagem)
+  const seen=new Set();
+  GAL=all.filter(r=>{
+    const url=(r[GAL_COLS.thumb]||r[GAL_COLS.full]||'').trim();
+    if(!url) return false;
+    if(seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
 
-  const years=all.map(r=>parseInt(r[GAL_COLS.year])).filter(Boolean);
-  const countries=GAL_COLS.country?[...new Set(all.map(r=>(r[GAL_COLS.country]||'').trim()).filter(Boolean))].sort():[];
+  const years=GAL.map(r=>parseInt(r[GAL_COLS.year])).filter(Boolean);
+  const countries=GAL_COLS.country?[...new Set(GAL.map(r=>(r[GAL_COLS.country]||'').trim()).filter(Boolean))].sort():[];
   const metrics=
-    mc(all.length||'—','Photos')+
+    mc(GAL.length||'—','Photos')+
     (countries.length?mc(countries.length,'Countries'):'')+
     (years.length?mc(Math.min(...years)+'–'+Math.max(...years),'Span'):'')+
     (years.length?mc(new Set(years).size,'Years'):'');
 
   $('tab-gallery').innerHTML=
     `<div class="metrics">${metrics}</div>`+
-    `<div class="sec">Photo Gallery <span class="sec-n" id="n-gal">(${all.length})</span></div>`+
+    `<div class="sec">Photo Gallery <span class="sec-n" id="n-gal">(${GAL.length})</span></div>`+
     `<div class="gal-filters">`+
       `<select id="gal-country" onchange="renderGallery()"><option value="">All countries</option>${countries.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`+
       `<select id="gal-year" onchange="renderGallery()"><option value="">All years</option>${[...new Set(years)].sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('')}</select>`+
