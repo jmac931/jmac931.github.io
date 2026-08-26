@@ -1079,8 +1079,10 @@ function renderGallery(){
 
   g.innerHTML=list.map((r,idx)=>{
     const cap=(r[GAL_COLS.cap]||'').trim();
+    const yr=(GAL_COLS.year?(r[GAL_COLS.year]||'').trim():'');
     const thumb=(r[GAL_COLS.thumb]||r[GAL_COLS.full]||'').trim();
-    return `<div class="gal-item" onclick="openLb(${idx})"><img loading="lazy" src="${thumb}" alt="${cap}"><div class="gal-cap">${cap}</div></div>`;
+    const capFull=yr?`${cap}${cap?' — ':''}${yr}`:cap;
+    return `<div class="gal-item" onclick="openLb(${idx})"><img loading="lazy" src="${thumb}" alt="${capFull}"><div class="gal-cap">${capFull}</div></div>`;
   }).join('');
 }
 
@@ -1088,7 +1090,9 @@ function openLb(idx){ lbIndex=idx; showLb(); $('lb').classList.add('open'); docu
 function showLb(){
   const r=GAL_VIEW[lbIndex]; if(!r) return;
   $('lb-img').src=(r[GAL_COLS.full]||r[GAL_COLS.thumb]||'').trim();
-  $('lb-cap').textContent=(r[GAL_COLS.cap]||'').trim();
+  const cap=(r[GAL_COLS.cap]||'').trim();
+  const yr=(GAL_COLS.year?(r[GAL_COLS.year]||'').trim():'');
+  $('lb-cap').textContent=yr?`${cap}${cap?' — ':''}${yr}`:cap;
 }
 function lbStep(d){ lbIndex=(lbIndex+d+GAL_VIEW.length)%GAL_VIEW.length; showLb(); }
 function closeLb(){ $('lb').classList.remove('open'); document.removeEventListener('keydown',lbKey); }
