@@ -418,7 +418,7 @@ footer a:hover{color:var(--verd-d);border-color:var(--verd)}
           <div class="chart-wrap" style="height:250px"><canvas id="c-pub-cited"></canvas></div>
         </div>
         <div class="panel" id="p-pub-venue">
-          <div class="sec">Most frequent venues</div>
+          <div class="sec" id="t-pub-venue">Most frequent journals</div>
           <div class="chart-wrap" style="height:250px"><canvas id="c-pub-venue"></canvas></div>
         </div>
       </div>
@@ -633,6 +633,7 @@ const PUBCOL = {
   citations:  'citscholar',  // totals, average, h-index, i10 and the citation charts
   venue:      'jornal',      // "Most frequent venues" and the line under each title
   citedLabel: 'T2',          // bar labels in "Most cited publications"
+  venueType:  'Jornal',      // only entries of this type are counted as journals
 };
 
 const NAV = [
@@ -734,6 +735,7 @@ function setN(id,n){const el=$(id);if(el)el.textContent=`(${n})`;}
 function numY(v){const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:Math.floor(n);}
 function byVal(rows,f){const c={};(rows||[]).forEach(r=>{const v=(r[f]||'').trim();if(v)c[v]=(c[v]||0)+1;});return c;}
 function sortY(o){return Object.keys(o).map(Number).sort((a,b)=>a-b);}
+function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
 
@@ -1103,10 +1105,15 @@ function pub(){
     }
   }
 
-  // most frequent venues
+  // most frequent journals — journal articles only
   $('p-pub-venue').style.display = venueCol?'':'none';
   if(venueCol){
-    const vc=byVal(pubs,venueCol);
+    const want=norm(PUBCOL.venueType);
+    let rowsV=(typeCol&&want)?pubs.filter(r=>norm(r[typeCol]).includes(want)):[];
+    const onlyJournals=rowsV.length>0;
+    if(!onlyJournals) rowsV=pubs.filter(r=>String(r[venueCol]||'').trim());
+    $('t-pub-venue').textContent=onlyJournals?'Most frequent journals':'Most frequent venues';
+    const vc=byVal(rowsV,venueCol);
     const top=Object.keys(vc).sort((a,b)=>vc[b]-vc[a]).slice(0,8);
     mkBarH('c-pub-venue',top.map(v=>v.length>42?v.slice(0,40)+'…':v),top.map(v=>vc[v]));
   }
