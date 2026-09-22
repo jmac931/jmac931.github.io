@@ -224,6 +224,11 @@ table.dt td:first-child{font-variant-numeric:tabular-nums}
 .map-prog .bar{flex:1;max-width:240px;height:4px;border-radius:3px;background:var(--line);overflow:hidden}
 .map-prog .bar i{display:block;height:100%;width:0;background:var(--verd);transition:width .3s}
 .leaflet-container{font-family:inherit;background:var(--surface-2)}
+.leaflet-tile-pane{filter:saturate(.76) contrast(.96) brightness(1.03)}
+:root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) saturate(.62) brightness(.92) contrast(.95)}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) saturate(.62) brightness(.92) contrast(.95)}
+}
 .leaflet-popup-content{margin:11px 13px;font-family:inherit}
 .leaflet-popup-content-wrapper{border-radius:var(--r-md)}
 .map-pop img{width:196px;max-width:48vw;border-radius:var(--r-sm);display:block;cursor:pointer}
@@ -524,7 +529,7 @@ footer a:hover{color:var(--verd-d);border-color:var(--verd)}
         <span id="map-prog-t">Placing locations…</span><span class="bar"><i id="map-prog-b"></i></span>
       </div>
       <div id="map"></div>
-      <p class="note">Map data © OpenStreetMap contributors, tiles © CARTO. Select a marker to open the photo.</p>
+      <p class="note">Map data © OpenStreetMap contributors. Select a marker to open the photo.</p>
     </section>
 
     <footer>
@@ -600,7 +605,6 @@ function toggleTheme(){
   applyThemeLabel();
   chartDefaults();
   if(Object.keys(DATA).length) render();
-  if(TILE) TILE.setUrl(tileUrl());
 }
 (function(){
   try{ const s=localStorage.getItem('jmac-theme'); if(s) document.documentElement.dataset.theme=s; }catch(e){}
@@ -1256,11 +1260,6 @@ function lbKey(e){ if(e.key==='Escape')closeLb(); else if(e.key==='ArrowRight')l
 /* ── map ───────────────────────────────────────────────────────────── */
 let MAP=null, TILE=null, MAP_DONE=false;
 function parseLL(v){const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:n;}
-function tileUrl(){
-  return theme()==='dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-}
 function mapMeta(){
   const all=DATA.Gallery||[];
   const c=GAL_COLS||{};
@@ -1285,8 +1284,8 @@ function initMap(){
   if(!withCoords.length){ MAP_DONE=true; return; }
 
   MAP=L.map('map',{scrollWheelZoom:true,worldCopyJump:true}).setView([25,10],2);
-  TILE=L.tileLayer(tileUrl(),{maxZoom:19,subdomains:'abcd',
-    attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(MAP);
+  TILE=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'}).addTo(MAP);
 
   const groups={}; const bounds=[];
   all.forEach((r,i)=>{
