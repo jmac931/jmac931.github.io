@@ -167,11 +167,24 @@ table.dt td:first-child{font-variant-numeric:tabular-nums}
 
 /* ── publications list ─────────────────────────────────────────────── */
 .publist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden}
-.pubitem{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:baseline;
+.pubitem{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:16px;align-items:baseline;
   padding:12px 16px;border-bottom:1px solid var(--line-soft)}
 .pubitem:last-child{border-bottom:none}
 .pubitem:hover{background:var(--verd-t)}
-.pubitem .py{font-size:13px;color:var(--verd-d);font-variant-numeric:tabular-nums}
+.pubitem .py{font-size:13px;color:var(--verd-d);font-variant-numeric:tabular-nums;
+  display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.qb{font-size:10.5px;padding:0 7px;border-radius:999px;border:1px solid currentColor;line-height:1.7}
+.q-Q1{color:var(--verd-d)} .q-Q2{color:var(--azure)} .q-Q3{color:var(--ochre)} .q-Q4{color:var(--copper)}
+.qfilt{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 10px;background:var(--surface-2);
+  border-bottom:1px solid var(--line-soft)}
+.qfilt:empty{display:none}
+.qfilt button{font:inherit;font-size:11.5px;padding:3px 11px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-2);cursor:pointer;transition:border-color .15s,background .15s}
+.qfilt button:hover{border-color:var(--verd)}
+.qfilt button.active{border-color:var(--verd);background:var(--verd-t);color:var(--ink);font-weight:500}
+.qgrow{flex:1;min-width:8px}
+.pright{display:flex;align-items:center;gap:9px;justify-self:end}
+.cites{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pubitem .pt{font-size:13.5px;line-height:1.45}
 .pubitem .pv{font-size:12px;color:var(--ink-3);margin-top:3px;font-style:italic}
 .pubitem .pg{font-size:11.5px;color:var(--ink-2);text-decoration:none;border:1px solid var(--line);
@@ -259,8 +272,8 @@ footer a:hover{color:var(--verd-d);border-color:var(--verd)}
   .mast-tools{top:12px;right:18px}
   .nav-in{padding:8px 18px}
   .content{padding:20px 18px 0}
-  .pubitem{grid-template-columns:48px minmax(0,1fr)}
-  .pubitem .pg{grid-column:2;justify-self:start;margin-top:6px}
+  .pubitem{grid-template-columns:56px minmax(0,1fr)}
+  .pubitem .pright{grid-column:2;justify-self:start;margin-top:6px}
   .gal-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
 }
 </style>
@@ -369,19 +382,41 @@ footer a:hover{color:var(--verd-d);border-color:var(--verd)}
       <div class="grid2">
         <div class="panel">
           <div class="sec">Publications by year</div>
+          <div class="legend" id="pub-legend"></div>
           <div class="chart-wrap" style="height:240px"><canvas id="c-pub-year"></canvas></div>
         </div>
-        <div class="panel">
+        <div class="panel" id="p-pub-cites">
+          <div class="sec">Citations by publication year</div>
+          <div class="chart-wrap" style="height:240px"><canvas id="c-pub-cites"></canvas></div>
+        </div>
+      </div>
+      <div class="grid2" id="pub-row2" style="margin-top:18px">
+        <div class="panel" id="p-pub-quart">
+          <div class="sec">Journal quartiles</div>
+          <div class="chart-wrap" style="height:240px"><canvas id="c-pub-quart"></canvas></div>
+        </div>
+        <div class="panel" id="p-pub-type">
           <div class="sec">Publications by type</div>
           <div class="chart-wrap" style="height:240px"><canvas id="c-pub-type"></canvas></div>
+        </div>
+      </div>
+      <div class="grid2" id="pub-row3" style="margin-top:18px">
+        <div class="panel" id="p-pub-cited">
+          <div class="sec">Most cited publications</div>
+          <div class="chart-wrap" style="height:250px"><canvas id="c-pub-cited"></canvas></div>
+        </div>
+        <div class="panel" id="p-pub-venue">
+          <div class="sec">Most frequent venues</div>
+          <div class="chart-wrap" style="height:250px"><canvas id="c-pub-venue"></canvas></div>
         </div>
       </div>
       <div class="sec">All publications <span class="sec-n" id="pub-n"></span></div>
       <div class="tblw" style="margin-bottom:0">
         <div class="tblw-bar">
-          <input id="pub-q" type="search" placeholder="Filter by title, venue or year" oninput="fpub(this)">
+          <input id="pub-q" type="search" placeholder="Filter by title, venue or year" oninput="applyPubFilter()">
           <span class="tblw-count" id="pub-count"></span>
         </div>
+        <div class="qfilt" id="pub-qfilt"></div>
         <div class="publist" id="pub-list" style="border:0;border-radius:0"></div>
       </div>
       <p class="note"><a href="https://pubs-8qod.onrender.com/?embed=true&amp;embed_options=hide_toolbar&amp;embed_options=hide_footer&amp;embed_options=show_colored_line" target="_blank" rel="noopener">Open the publications dashboard</a></p>
@@ -819,6 +854,20 @@ function mkPie(id,labels,data,colors){
         tooltip:{backgroundColor:theme()==='dark'?'#0B1317':'#16222B',padding:9,cornerRadius:7,displayColors:false}}}});
 }
 
+function mkBarH(id,labels,data,color){
+  if(CH[id])CH[id].destroy();
+  const c=$(id);if(!c)return;
+  CH[id]=new Chart(c,{type:'bar',data:{labels,datasets:[{data,backgroundColor:color||cssv('--verd'),borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:theme()==='dark'?'#0B1317':'#16222B',
+        padding:9,cornerRadius:7,displayColors:false}},
+      scales:{
+        x:{grid:{color:gridC()},border:{display:false},beginAtZero:true,
+           ticks:{color:cssv('--ink-3'),font:{size:10},precision:0}},
+        y:{grid:{display:false},border:{color:gridC()},
+           ticks:{color:cssv('--ink-2'),font:{size:10.5},autoSkip:false}}}}});
+}
+
 /* ── render ────────────────────────────────────────────────────────── */
 function render(){profile();ov();pub();uc();sup();rev();out();jur();org();av();proj();pat();aw();gallery();}
 
@@ -861,6 +910,45 @@ function ov(){
     {label:'Keynotes',data:ty.map(y=>ky2[y]||0),backgroundColor:cssv('--ochre'),borderRadius:3}],true);
 }
 
+/* ── publications ──────────────────────────────────────────────────── */
+const QORDER=['Q1','Q2','Q3','Q4','Other'];
+function qColor(q){
+  return ({Q1:cssv('--verd'),Q2:cssv('--azure'),Q3:cssv('--ochre'),Q4:cssv('--copper'),Other:cssv('--ink-3')})[q]||cssv('--ink-3');
+}
+function quartOf(r,col,skip){
+  if(col){
+    const v=String(r[col]||'').trim();
+    const m=v.match(/\bQ\s*([1-4])\b/i);
+    if(m) return 'Q'+m[1];
+    if(/^[1-4]$/.test(v)) return 'Q'+v;
+    return 'Other';
+  }
+  for(const k of Object.keys(r)){
+    if(skip&&skip.indexOf(k)>=0) continue;
+    const m=String(r[k]||'').match(/\bQ\s*([1-4])\b/i);
+    if(m) return 'Q'+m[1];
+  }
+  return 'Other';
+}
+let QMAP=new Map(), PUB_Q='', HAS_Q=false;
+
+function numericCol(rows,cands){
+  for(const k of cands){
+    if(!k) continue;
+    let num=0,tot=0;
+    rows.forEach(r=>{const v=String(r[k]||'').trim(); if(!v)return; tot++; if(/^\d+([.,]\d+)?$/.test(v)) num++;});
+    if(tot>0&&num/tot>=0.6) return k;
+  }
+  return null;
+}
+function hIndex(counts){
+  const s=[...counts].sort((a,b)=>b-a);
+  let h=0;
+  for(let i=0;i<s.length;i++){ if(s[i]>=i+1) h=i+1; else break; }
+  return h;
+}
+let CITE_COL=null, CMAP=new Map(), HAS_C=false, PUB_SORT='year', PUBS=[], PUBS_COLS=null;
+
 function pub(){
   const pubs=DATA.Publicacoes||[];
   const keys=pubs.length>0?Object.keys(pubs[0]):[];
@@ -870,36 +958,136 @@ function pub(){
   const venueCol = find('revista','journal','conferência','conferencia','venue','publicado','source','editora','publisher');
   const typeCol  = find('tipo','type','categoria','category','natureza');
   const linkCol  = find('doi','link','url','hyperlink');
+  const quartCol = find('quartil','quartile','scimago','sjr','jcr','impact','indexa','indexing','rank');
+  CITE_COL = numericCol(pubs,keys.filter(k=>/cita|cited|cites|scopus|wos|scholar/i.test(k)));
+
+  const skip=[titleCol,linkCol,venueCol].filter(Boolean);
+  QMAP=new Map(); PUB_Q='';
+  const qc={}; QORDER.forEach(q=>qc[q]=0);
+  pubs.forEach(r=>{const q=quartOf(r,quartCol,skip); QMAP.set(r,q); qc[q]++;});
+  HAS_Q=(qc.Q1+qc.Q2+qc.Q3+qc.Q4)>0;
+  const present=QORDER.filter(q=>qc[q]>0);
+  const pct=n=>pubs.length?Math.round(n/pubs.length*100)+'%':'—';
+
+  CMAP=new Map();
+  if(CITE_COL) pubs.forEach(r=>{
+    const v=String(r[CITE_COL]||'').replace(/[^\d]/g,'');
+    CMAP.set(r,v?parseInt(v):0);
+  });
+  const counts=CITE_COL?pubs.map(r=>CMAP.get(r)||0):[];
+  const totalCites=counts.reduce((s,n)=>s+n,0);
+  HAS_C=totalCites>0;
+  const hIdx=HAS_C?hIndex(counts):0;
+  const i10=HAS_C?counts.filter(n=>n>=10).length:0;
+  const perPub=HAS_C&&pubs.length?(totalCites/pubs.length).toFixed(1):'0';
 
   const years=pubs.map(r=>extractYear(r[yearCol_])).filter(Boolean);
   const yc=byYRobust(pubs,yearCol_), ys=sortY(yc);
   const last5=years.filter(y=>y>=(new Date().getFullYear()-4)).length;
   const peakYear=ys.length? ys.reduce((a,b)=>yc[b]>=yc[a]?b:a) : null;
   const withDoi=linkCol? pubs.filter(r=>String(r[linkCol]||'').trim()).length : 0;
+
   $('m-pub').innerHTML=
     mc(pubs.length||'—','Publications')+
+    (HAS_C?mc(totalCites.toLocaleString('en-GB'),'Citations',`${perPub} per publication`):'')+
+    (HAS_C?mc(hIdx,'h-index',`i10-index ${i10}`):'')+
+    (HAS_Q?mc(qc.Q1,'In Q1 journals',pct(qc.Q1)+' of everything'):'')+
+    (HAS_Q?mc(qc.Q1+qc.Q2,'In Q1 or Q2',pct(qc.Q1+qc.Q2)+' of everything'):'')+
     (years.length?mc(last5,'Last five years'):'')+
     (years.length?mc(Math.min(...years)+'–'+Math.max(...years),'Span',`${new Set(years).size} active years`):'')+
-    (peakYear?mc(yc[peakYear],'Busiest year',String(peakYear)):'')+
-    (typeCol?mc(new Set(pubs.map(r=>(r[typeCol]||'').trim()).filter(Boolean)).size,'Types'):'')+
-    (linkCol?mc(withDoi,'With DOI or link'):'');
+    (!HAS_Q&&peakYear?mc(yc[peakYear],'Busiest year',String(peakYear)):'')+
+    (!HAS_Q&&!HAS_C&&typeCol?mc(new Set(pubs.map(r=>(r[typeCol]||'').trim()).filter(Boolean)).size,'Types'):'')+
+    (!HAS_C&&linkCol?mc(withDoi,'With DOI or link'):'');
 
-  if(ys.length>0) mkC('c-pub-year','bar',ys,[{label:'Publications',data:ys.map(y=>yc[y]||0),
-    backgroundColor:cssv('--verd'),borderRadius:3}]);
+  // by year — stacked by quartile when the data allows it
+  if(ys.length>0){
+    if(HAS_Q){
+      const byYQ={};
+      pubs.forEach(r=>{
+        const y=extractYear(r[yearCol_]); if(!y) return;
+        const q=QMAP.get(r);
+        byYQ[y]=byYQ[y]||{}; byYQ[y][q]=(byYQ[y][q]||0)+1;
+      });
+      mkC('c-pub-year','bar',ys,present.map(q=>({label:q,data:ys.map(y=>(byYQ[y]||{})[q]||0),
+        backgroundColor:qColor(q),borderRadius:2,borderWidth:0})),true);
+      $('pub-legend').innerHTML=present.map(q=>`<span><b style="background:${qColor(q)}"></b>${q}</span>`).join('');
+    } else {
+      mkC('c-pub-year','bar',ys,[{label:'Publications',data:ys.map(y=>yc[y]||0),
+        backgroundColor:cssv('--verd'),borderRadius:3}]);
+      $('pub-legend').innerHTML='';
+    }
+  }
 
-  const catCol = typeCol || venueCol;
-  if(catCol){
-    const bc=byVal(pubs,catCol);
+  // citations by publication year
+  $('p-pub-cites').style.display = HAS_C?'':'none';
+  if(HAS_C&&ys.length>0){
+    const cy={};
+    pubs.forEach(r=>{const y=extractYear(r[yearCol_]); if(!y)return; cy[y]=(cy[y]||0)+(CMAP.get(r)||0);});
+    mkC('c-pub-cites','bar',ys,[{label:'Citations',data:ys.map(y=>cy[y]||0),
+      backgroundColor:cssv('--plum'),borderRadius:3}]);
+  }
+
+  // most cited publications
+  $('p-pub-cited').style.display = HAS_C?'':'none';
+  if(HAS_C){
+    const top=[...pubs].sort((a,b)=>(CMAP.get(b)||0)-(CMAP.get(a)||0)).slice(0,8).filter(r=>CMAP.get(r)>0);
+    mkBarH('c-pub-cited',
+      top.map(r=>{const t=String(r[titleCol]||'—').trim();return t.length>44?t.slice(0,42)+'…':t;}),
+      top.map(r=>CMAP.get(r)||0), cssv('--azure'));
+  }
+
+  // quartile mix
+  $('p-pub-quart').style.display = HAS_Q?'':'none';
+  if(HAS_Q) mkPie('c-pub-quart',present,present.map(q=>qc[q]),present.map(qColor));
+
+  // by type
+  $('p-pub-type').style.display = typeCol?'':'none';
+  if(typeCol){
+    const bc=byVal(pubs,typeCol);
     let ck=Object.keys(bc).sort((a,b)=>bc[b]-bc[a]);
     if(ck.length>8){
-      const top=ck.slice(0,7), rest=ck.slice(7);
-      const otherSum=rest.reduce((s,k)=>s+bc[k],0);
+      const top=ck.slice(0,7), otherSum=ck.slice(7).reduce((s,k)=>s+bc[k],0);
       mkPie('c-pub-type',top.concat('Other'),top.map(k=>bc[k]).concat(otherSum));
     } else {
       mkPie('c-pub-type',ck,ck.map(k=>bc[k]));
     }
   }
-  renderPubs(pubs,{titleCol,yearCol_,venueCol,linkCol});
+
+  // most frequent venues
+  $('p-pub-venue').style.display = venueCol?'':'none';
+  if(venueCol){
+    const vc=byVal(pubs,venueCol);
+    const top=Object.keys(vc).sort((a,b)=>vc[b]-vc[a]).slice(0,8);
+    mkBarH('c-pub-venue',top.map(v=>v.length>42?v.slice(0,40)+'…':v),top.map(v=>vc[v]));
+  }
+
+  $('pub-row2').style.display = (HAS_Q||typeCol)?'':'none';
+  $('pub-row3').style.display = (HAS_C||venueCol)?'':'none';
+
+  // filter and sort controls
+  PUB_SORT='year';
+  const chips = HAS_Q
+    ? [['','All']].concat(present.map(q=>[q,`${q} (${qc[q]})`]))
+        .map(([v,l],i)=>`<button type="button" class="${i===0?'active':''}" onclick="fq(this,'${v}')">${l}</button>`).join('')
+    : '';
+  const sorters = HAS_C
+    ? (chips?'<span class="qgrow"></span>':'')+
+      `<button type="button" class="active" onclick="setSort(this,'year')">Newest</button>`+
+      `<button type="button" onclick="setSort(this,'cites')">Most cited</button>`
+    : '';
+  $('pub-qfilt').innerHTML = chips+sorters;
+
+  PUBS=pubs; PUBS_COLS={titleCol,yearCol_,venueCol,linkCol};
+  renderPubs(pubs,PUBS_COLS);
+}
+
+function setSort(btn,mode){
+  PUB_SORT=mode;
+  const all=[...$('pub-qfilt').querySelectorAll('button')];
+  all.slice(all.findIndex(b=>b.textContent==='Newest')).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPubs(PUBS,PUBS_COLS);
+  applyPubFilter();
 }
 
 function renderPubs(pubs,cols){
@@ -910,7 +1098,8 @@ function renderPubs(pubs,cols){
   }
   const {titleCol,yearCol_,venueCol,linkCol}=cols;
   const list=[...pubs];
-  if(yearCol_) list.sort((a,b)=>(extractYear(b[yearCol_])||0)-(extractYear(a[yearCol_])||0));
+  if(PUB_SORT==='cites'&&HAS_C) list.sort((a,b)=>(CMAP.get(b)||0)-(CMAP.get(a)||0));
+  else if(yearCol_) list.sort((a,b)=>(extractYear(b[yearCol_])||0)-(extractYear(a[yearCol_])||0));
   $('pub-n').textContent=`(${pubs.length})`;
   $('pub-count').textContent=`${pubs.length} entries`;
 
@@ -918,24 +1107,37 @@ function renderPubs(pubs,cols){
     const title=(r[titleCol]||'—').trim();
     const year=yearCol_?(extractYear(r[yearCol_])||(r[yearCol_]||'').trim()):'';
     const venue=venueCol?(r[venueCol]||'').trim():'';
+    const q=QMAP.get(r)||'Other';
+    const cn=CMAP.get(r)||0;
     let link=linkCol?(r[linkCol]||'').trim():'';
     let isDoi=false;
     if(link && !/^https?:\/\//i.test(link)){
       if(/^10\./.test(link)){ link='https://doi.org/'+link; isDoi=true; } else link='';
     } else if(/doi\.org/i.test(link)) isDoi=true;
-    return `<div class="pubitem">
-      <div class="py">${esc(year)||'—'}</div>
+    return `<div class="pubitem" data-q="${q}">
+      <div class="py">${esc(year)||'—'}${HAS_Q&&q!=='Other'?`<span class="qb q-${q}">${q}</span>`:''}</div>
       <div><div class="pt">${esc(title)}</div>${venue?`<div class="pv">${esc(venue)}</div>`:''}</div>
-      ${link?`<a class="pg" href="${esc(link)}" target="_blank" rel="noopener">${isDoi?'DOI':'Link'}</a>`:'<span></span>'}
+      <div class="pright">${HAS_C&&cn?`<span class="cites">${cn} citation${cn===1?'':'s'}</span>`:''}${link?`<a class="pg" href="${esc(link)}" target="_blank" rel="noopener">${isDoi?'DOI':'Link'}</a>`:''}</div>
     </div>`;
   }).join('');
 }
-function fpub(inp){
-  const items=$('pub-list').querySelectorAll('.pubitem');
+
+function fq(btn,q){
+  PUB_Q=q;
+  document.querySelectorAll('#pub-qfilt button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyPubFilter();
+}
+function applyPubFilter(){
+  const inp=$('pub-q'); if(!inp) return;
   const q=inp.value.trim().toLowerCase();
+  const items=$('pub-list').querySelectorAll('.pubitem');
   let n=0;
-  items.forEach(el=>{const m=!q||el.textContent.toLowerCase().includes(q);el.style.display=m?'':'none';if(m)n++;});
-  $('pub-count').textContent = q?`${n} of ${items.length}`:`${items.length} entries`;
+  items.forEach(el=>{
+    const show=(!PUB_Q||el.dataset.q===PUB_Q)&&(!q||el.textContent.toLowerCase().includes(q));
+    el.style.display=show?'':'none'; if(show)n++;
+  });
+  $('pub-count').textContent=(q||PUB_Q)?`${n} of ${items.length}`:`${items.length} entries`;
 }
 
 function uc(){
