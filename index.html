@@ -119,6 +119,7 @@ a{color:var(--verd-d)}
 .sec:first-child{margin-top:0}
 .sec-n{font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--ink-3);font-weight:400}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid2.solo{grid-template-columns:1fr}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px}
 .panel .sec{margin:0 0 10px}
 .chart-wrap{position:relative;width:100%}
@@ -358,7 +359,18 @@ footer a:hover{color:var(--verd-d);border-color:var(--verd)}
     <!-- OVERVIEW -->
     <section id="tab-overview" class="tab">
       <div class="ledger" id="m-ov"></div>
-      <div class="grid2">
+      <div class="grid2" id="ov-row1">
+        <div class="panel" id="p-ov-pub">
+          <div class="sec">Publications by year</div>
+          <div class="legend" id="ov-pub-legend"></div>
+          <div class="chart-wrap" style="height:220px"><canvas id="c-ov-pub"></canvas></div>
+        </div>
+        <div class="panel" id="p-ov-cites">
+          <div class="sec">Citations by publication year</div>
+          <div class="chart-wrap" style="height:220px;margin-top:22px"><canvas id="c-ov-cites"></canvas></div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:18px">
         <div class="panel">
           <div class="sec">PhD and MSc by year</div>
           <div class="legend"><span><b style="background:#2E7D6B"></b>PhD</span><span><b style="background:#2C6285"></b>MSc</span></div>
@@ -869,7 +881,7 @@ function mkBarH(id,labels,data,color){
 }
 
 /* ── render ────────────────────────────────────────────────────────── */
-function render(){profile();ov();pub();uc();sup();rev();out();jur();org();av();proj();pat();aw();gallery();}
+function render(){profile();pub();ov();uc();sup();rev();out();jur();org();av();proj();pat();aw();gallery();}
 
 function profile(){
   const phd=DATA.TesesPhD||[],msc=DATA.TesesMsC||[];
@@ -894,11 +906,27 @@ function ov(){
   const pal=DATA.Palestras||[]; const ky=DATA.Keynote||[];
   const py=byYRobust(pal,yearCol(pal[0])||'Ano'); const ky2=byYRobust(ky,yearCol(ky[0])||'Ano');
   const ty=[...new Set([...Object.keys(py),...Object.keys(ky2)].map(Number))].sort((a,b)=>a-b);
+  const on=(DATA.AlunosPhD||[]).length, ipcN=(DATA.IPC||[]).length;
+  const S=PUBSTATS;
   $('m-ov').innerHTML=
-    mc(phd.length,'Completed PhDs')+mc((DATA.AlunosPhD||[]).length,'Ongoing PhDs')+
-    mc(msc.length,'Completed MScs')+mc(revD.length,'Journal reviews')+
-    mc((DATA.IPC||[]).length,'Programme committees')+mc(ky.length,'Keynotes')+
+    (S?mc(S.total||'—','Publications'):'')+
+    (S&&HAS_C?mc(S.totalCites.toLocaleString('en-GB'),'Citations',`h-index ${S.hIdx}`):'')+
+    mc(phd.length,'Completed PhDs',on?`${on} ongoing`:'')+
+    mc(msc.length,'Completed MScs')+
+    mc(revD.length,'Journal reviews',ipcN?`${ipcN} programme committees`:'')+
+    mc(ky.length,'Keynotes')+
     mc(pal.length,'Talks')+mc((DATA.Prémios||[]).length,'Awards');
+
+  // publications and citations, mirrored from the Publications tab
+  $('ov-row1').style.display = (S&&S.ys.length)?'':'none';
+  $('ov-row1').classList.toggle('solo',!HAS_C);
+  $('p-ov-cites').style.display = HAS_C?'':'none';
+  if(S&&S.ys.length){
+    mkC('c-ov-pub','bar',S.ys,pubYearDatasets(),HAS_Q);
+    $('ov-pub-legend').innerHTML=pubLegendHtml();
+    if(HAS_C) mkC('c-ov-cites','bar',S.ys,[{label:'Citations',
+      data:S.ys.map(y=>S.cy[y]||0),backgroundColor:cssv('--plum'),borderRadius:3}]);
+  }
   mkC('c-ov','bar',yrs,[
     {label:'PhD',data:yrs.map(y=>pd[y]||0),backgroundColor:cssv('--verd'),borderRadius:3},
     {label:'MSc',data:yrs.map(y=>md[y]||0),backgroundColor:cssv('--azure'),borderRadius:3}]);
@@ -947,7 +975,18 @@ function hIndex(counts){
   for(let i=0;i<s.length;i++){ if(s[i]>=i+1) h=i+1; else break; }
   return h;
 }
-let CITE_COL=null, CMAP=new Map(), HAS_C=false, PUB_SORT='year', PUBS=[], PUBS_COLS=null;
+let CITE_COL=null, CMAP=new Map(), HAS_C=false, PUB_SORT='year', PUBS=[], PUBS_COLS=null, PUBSTATS=null;
+
+function pubYearDatasets(){
+  const S=PUBSTATS; if(!S) return [];
+  return HAS_Q
+    ? S.present.map(q=>({label:q,data:S.ys.map(y=>(S.byYQ[y]||{})[q]||0),
+        backgroundColor:qColor(q),borderRadius:2,borderWidth:0}))
+    : [{label:'Publications',data:S.ys.map(y=>S.yc[y]||0),backgroundColor:cssv('--verd'),borderRadius:3}];
+}
+function pubLegendHtml(){
+  return HAS_Q&&PUBSTATS ? PUBSTATS.present.map(q=>`<span><b style="background:${qColor(q)}"></b>${q}</span>`).join('') : '';
+}
 
 function pub(){
   const pubs=DATA.Publicacoes||[];
@@ -999,30 +1038,24 @@ function pub(){
     (!HAS_Q&&!HAS_C&&typeCol?mc(new Set(pubs.map(r=>(r[typeCol]||'').trim()).filter(Boolean)).size,'Types'):'')+
     (!HAS_C&&linkCol?mc(withDoi,'With DOI or link'):'');
 
+  const byYQ={}, cy={};
+  pubs.forEach(r=>{
+    const y=extractYear(r[yearCol_]); if(!y) return;
+    const q=QMAP.get(r)||'Other';
+    byYQ[y]=byYQ[y]||{}; byYQ[y][q]=(byYQ[y][q]||0)+1;
+    cy[y]=(cy[y]||0)+(CMAP.get(r)||0);
+  });
+  PUBSTATS={ys,yc,byYQ,cy,present,total:pubs.length,totalCites,hIdx};
+
   // by year — stacked by quartile when the data allows it
   if(ys.length>0){
-    if(HAS_Q){
-      const byYQ={};
-      pubs.forEach(r=>{
-        const y=extractYear(r[yearCol_]); if(!y) return;
-        const q=QMAP.get(r);
-        byYQ[y]=byYQ[y]||{}; byYQ[y][q]=(byYQ[y][q]||0)+1;
-      });
-      mkC('c-pub-year','bar',ys,present.map(q=>({label:q,data:ys.map(y=>(byYQ[y]||{})[q]||0),
-        backgroundColor:qColor(q),borderRadius:2,borderWidth:0})),true);
-      $('pub-legend').innerHTML=present.map(q=>`<span><b style="background:${qColor(q)}"></b>${q}</span>`).join('');
-    } else {
-      mkC('c-pub-year','bar',ys,[{label:'Publications',data:ys.map(y=>yc[y]||0),
-        backgroundColor:cssv('--verd'),borderRadius:3}]);
-      $('pub-legend').innerHTML='';
-    }
+    mkC('c-pub-year','bar',ys,pubYearDatasets(),HAS_Q);
+    $('pub-legend').innerHTML=pubLegendHtml();
   }
 
   // citations by publication year
   $('p-pub-cites').style.display = HAS_C?'':'none';
   if(HAS_C&&ys.length>0){
-    const cy={};
-    pubs.forEach(r=>{const y=extractYear(r[yearCol_]); if(!y)return; cy[y]=(cy[y]||0)+(CMAP.get(r)||0);});
     mkC('c-pub-cites','bar',ys,[{label:'Citations',data:ys.map(y=>cy[y]||0),
       backgroundColor:cssv('--plum'),borderRadius:3}]);
   }
