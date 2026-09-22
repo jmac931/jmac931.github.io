@@ -626,6 +626,15 @@ const GID = {
   Patentes:      '1601770029',
 };
 
+// Columns pinned by hand in the publications sheet.
+// Matching ignores case and surrounding spaces. Leave a value empty ('') to fall
+// back to automatic detection by column name.
+const PUBCOL = {
+  citations:  'citscholar',  // totals, average, h-index, i10 and the citation charts
+  venue:      'jornal',      // "Most frequent venues" and the line under each title
+  citedLabel: 'T2',          // bar labels in "Most cited publications"
+};
+
 const NAV = [
   ['Record',   [['profile','Profile'],['overview','Overview']]],
   ['Research', [['publications','Publications'],['projects','Projects'],['patents','Patents']]],
@@ -992,13 +1001,15 @@ function pub(){
   const pubs=DATA.Publicacoes||[];
   const keys=pubs.length>0?Object.keys(pubs[0]):[];
   const find=(...h)=>{for(const x of h){const k=keys.find(k=>k.toLowerCase().includes(x));if(k)return k;}return null;};
+  const pick=n=>{if(!n)return null;const t=String(n).trim().toLowerCase();return keys.find(k=>k.trim().toLowerCase()===t)||null;};
   const titleCol = find('título','titulo','title','publicaç','publicacao','referência','referencia','citation','reference') || keys[0];
   const yearCol_ = find('ano','year','data');
-  const venueCol = find('revista','journal','conferência','conferencia','venue','publicado','source','editora','publisher');
+  const venueCol = pick(PUBCOL.venue) || find('revista','journal','conferência','conferencia','venue','publicado','source','editora','publisher');
+  const citedLabelCol = pick(PUBCOL.citedLabel) || titleCol;
   const typeCol  = find('tipo','type','categoria','category','natureza');
   const linkCol  = find('doi','link','url','hyperlink');
   const quartCol = find('quartil','quartile','scimago','sjr','jcr','impact','indexa','indexing','rank');
-  CITE_COL = numericCol(pubs,keys.filter(k=>/cita|cited|cites|scopus|wos|scholar/i.test(k)));
+  CITE_COL = pick(PUBCOL.citations) || numericCol(pubs,keys.filter(k=>/cita|cited|cites|scopus|wos|scholar/i.test(k)));
 
   const skip=[titleCol,linkCol,venueCol].filter(Boolean);
   QMAP=new Map(); PUB_Q='';
@@ -1064,9 +1075,15 @@ function pub(){
   $('p-pub-cited').style.display = HAS_C?'':'none';
   if(HAS_C){
     const top=[...pubs].sort((a,b)=>(CMAP.get(b)||0)-(CMAP.get(a)||0)).slice(0,8).filter(r=>CMAP.get(r)>0);
-    mkBarH('c-pub-cited',
-      top.map(r=>{const t=String(r[titleCol]||'—').trim();return t.length>44?t.slice(0,42)+'…':t;}),
-      top.map(r=>CMAP.get(r)||0), cssv('--azure'));
+    const seen={};
+    const labels=top.map(r=>{
+      let t=String(r[citedLabelCol]||'—').trim();
+      if(t.length>44) t=t.slice(0,42)+'…';
+      seen[t]=(seen[t]||0)+1;
+      const y=yearCol_?extractYear(r[yearCol_]):null;
+      return (seen[t]>1&&y)?`${t} (${y})`:t;
+    });
+    mkBarH('c-pub-cited',labels,top.map(r=>CMAP.get(r)||0),cssv('--azure'));
   }
 
   // quartile mix
